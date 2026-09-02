@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.1.0 (GitHub Pages) · 02/09/2026
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.2.0 (GitHub Pages) · 02/09/2026
+  v1.2.0: ảnh phiếu hiện trong màn duyệt (chạm phóng to); mở tab Tồn kho / Duyệt hiện ngay bản đã có rồi tải mới ngầm;
+          khoiTao gửi dm_ver — máy chủ không gửi lại 1.600 dòng danh mục nếu chưa đổi; overlay chờ hiện số giây. Đi cùng Code v0.9.
   v1.1.0: màn Duyệt — kế toán chạm dòng để đổi mã / SL / ĐVT, bỏ dòng thừa, thêm dòng AI sót, đổi đối tác,
           rồi "Lưu sửa đổi và duyệt" (Code v0.8 apiSuaPhieu). Trả lại chỉ khi phiếu sai hẳn.
   v1.0.2: bấm Nhập kho / Nhận hàng thuê / Trả hàng thuê → chọn CHỤP ẢNH hoặc CHỌN ẢNH CÓ SẴN trong máy.
@@ -71,6 +73,12 @@
   .ds-item{padding:10px;border:1px solid var(--vien);border-radius:8px;margin:6px 0;background:#fff}
   tr.da-sua td{background:#e3f2fd} tr.bo-dong td{text-decoration:line-through;opacity:.55}
   .sua-nhac{font-size:12px;color:#1565c0}
+  .anh-duyet{width:100%;max-height:34vh;object-fit:contain;background:#222;border-radius:8px;display:block;margin:6px 0}
+  .anh-cho{background:#eee;border-radius:8px;padding:18px;text-align:center;font-size:13px;color:#666;margin:6px 0}
+  #moAnh{background:rgba(0,0,0,.92);align-items:center;justify-content:center}
+  #moAnh>div{background:none;max-height:100vh;height:100vh;width:100vw;border-radius:0;padding:0;overflow:auto;-webkit-overflow-scrolling:touch}
+  #moAnh img{display:block;width:100%;transition:width .15s} #moAnh img.to{width:220%}
+  #moAnh .dongAnh{position:fixed;top:12px;right:12px;background:#fff;border:0;border-radius:20px;padding:8px 14px;font-weight:700;z-index:2}
 </style>
 </head>
 <body>
@@ -178,6 +186,9 @@
   <button class="nut phu" onclick="dong('moNguonAnh')">Hủy</button>
 </div></div>
 
+<!-- Xem ảnh phiếu toàn màn hình (v1.2) — chạm ảnh để phóng to / thu nhỏ -->
+<div class="mo" id="moAnh"><div><button class="dongAnh" onclick="dong('moAnh')">✕ Đóng</button><img id="anhTo" onclick="this.classList.toggle('to')" alt="Ảnh phiếu"></div></div>
+
 <!-- Kế toán sửa 1 dòng phiếu trước khi duyệt (v1.1) -->
 <div class="mo" id="moSuaDong"><div>
   <h3 style="margin:0 0 4px" id="sdTieuDe">Sửa dòng</h3>
@@ -256,7 +267,14 @@ function api(action, data, giay) {
 function luuPhien(kq) { try { localStorage.setItem('kho_phien', JSON.stringify({ token: TOKEN, dl: kq, luc: Date.now(), ver: CONFIG.VERSION })); } catch (e) { } }
 function docPhien() { try { return JSON.parse(localStorage.getItem('kho_phien') || 'null'); } catch (e) { return null; } }
 function xoaPhien() { TOKEN = ''; DL = null; try { localStorage.removeItem('kho_phien'); } catch (e) { } }
-function tai(b, chu) { document.getElementById('tai').classList.toggle('hien', !!b); document.getElementById('taiChu').textContent = chu || ''; }
+var taiTimer = null, taiBatDau = 0;
+function tai(b, chu) {                                   // v1.2: hiện số giây đã chờ để người dùng biết app vẫn đang chạy
+  document.getElementById('tai').classList.toggle('hien', !!b);
+  clearInterval(taiTimer);
+  if (!b) { document.getElementById('taiChu').textContent = ''; return; }
+  taiBatDau = Date.now(); document.getElementById('taiChu').textContent = chu || '';
+  taiTimer = setInterval(function () { document.getElementById('taiChu').textContent = (chu || '') + ' · ' + Math.round((Date.now() - taiBatDau) / 1000) + ' s'; }, 1000);
+}
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 function moTab(t) {
   ['Chup', 'Xuat', 'Ton', 'Duyet', 'Login', 'KiemTra'].forEach(function (x) {
@@ -293,7 +311,7 @@ window.addEventListener('load', function () {
   if (p.dl) { batDau(p.dl); }                                   // hiện ngay bản đã lưu
   if (!navigator.onLine) { if (!p.dl) hienLogin('Không có mạng. Lần đăng nhập đầu tiên phải có kết nối.'); return; }
   tai(!p.dl, 'Đang tải dữ liệu kho…');
-  api('khoiTao', {}, 90).then(function (kq) { tai(false); batDau(kq); luuPhien(kq); })
+  api('khoiTao', { dm_ver: p.dl && p.dl.dm_ver || '' }, 90).then(function (kq) { tai(false); batDau(kq); luuPhien(DL); })
     .catch(function (e) { tai(false); if (!p.dl) hienLogin(e.message); });   // lỗi TOKEN đã được api() xử lý
 });
 function dangNhap() {
@@ -317,6 +335,8 @@ function dangXuat() {
 }
 /* nhận dữ liệu khởi tạo (từ đăng nhập, từ bản lưu hoặc từ khoiTao) → dựng giao diện */
 function batDau(kq) {
+    if (!kq.vat_tu && DL && DL.vat_tu) kq.vat_tu = DL.vat_tu;             // v1.2: máy chủ không gửi lại danh mục vì chưa đổi
+    if (!kq.vat_tu) kq.vat_tu = [];
     DL = kq;
     document.getElementById('topUser').textContent = (kq.user.ho_ten || kq.user.email) + ' · ' + kq.user.ma_da;
     document.getElementById('tieuDe').textContent = 'Kho ' + kq.user.ma_da;
@@ -563,15 +583,20 @@ function guiXuatTay() {
 }
 
 /* ================= tồn kho ================= */
+var TON_CACHE = {};                                      // v1.2: nhớ tồn từng kho trong phiên → mở tab hiện ngay, tải mới ngầm
 function taiTon() {
   var kho = document.getElementById('tonKho').value; if (!kho) return;
-  tai(true, 'Đang tính tồn từ chứng từ đã duyệt…');
+  var cu = TON_CACHE[kho];
+  if (cu) { tonRows = cu.rows; document.getElementById('tonLuc').textContent = 'Tính lúc ' + cu.luc + ' · ' + cu.tong + ' mã · đang làm mới…'; locTon(); }
+  else tai(true, 'Đang tính tồn từ chứng từ đã duyệt…');
   api('tonKho', { ma_kho: kho }, 90).then(function (kq) {
     tai(false);
+    TON_CACHE[kho] = kq;
+    if (document.getElementById('tonKho').value !== kho) return;
     tonRows = kq.rows;
     document.getElementById('tonLuc').textContent = 'Tính lúc ' + kq.luc + ' · ' + kq.tong + ' mã có phát sinh';
     locTon();
-  }).catch(function (e) { tai(false); bao(e.message); });
+  }).catch(function (e) { tai(false); if (!cu) bao(e.message); });
 }
 function locTon() {
   var q = boDau(document.getElementById('tonTim').value);
@@ -584,10 +609,13 @@ function locTon() {
 }
 
 /* ================= duyệt ================= */
+var DUYET_CACHE = null;
 function taiChoDuyet() {
-  tai(true, 'Đang tải danh sách…');
-  api('choDuyet', {}).then(function (kq) {
-    tai(false);
+  if (DUYET_CACHE) veChoDuyet(DUYET_CACHE, true); else tai(true, 'Đang tải danh sách…');
+  api('choDuyet', {}).then(function (kq) { tai(false); DUYET_CACHE = kq; veChoDuyet(kq, false); })
+    .catch(function (e) { tai(false); if (!DUYET_CACHE) bao(e.message); });
+}
+function veChoDuyet(kq, dangLamMoi) {
     function ve(list, idEl, laKiemMau) {
       document.getElementById(idEl).innerHTML = list.length ? list.map(function (p) {
         return '<div class="ds-item" onclick="moPhieu(\'' + p.loai + '\',\'' + esc(p.so) + '\',' + laKiemMau + ')"><b>' + esc(p.so) + '</b> <span class="tem ' + esc(p.trang_thai) + '">' + esc(p.trang_thai) + '</span>' +
@@ -596,8 +624,7 @@ function taiChoDuyet() {
     }
     ve(kq.cho_duyet, 'dsChoDuyet', false);
     ve(kq.kiem_mau, 'dsKiemMau', true);
-    document.getElementById('duyetDem').textContent = kq.cho_duyet.length + ' chờ duyệt · ' + kq.kiem_mau.length + ' cần kiểm mẫu';
-  }).catch(function (e) { tai(false); bao(e.message); });
+    document.getElementById('duyetDem').textContent = kq.cho_duyet.length + ' chờ duyệt · ' + kq.kiem_mau.length + ' cần kiểm mẫu' + (dangLamMoi ? ' · đang làm mới…' : '');
 }
 /* v1.1: SD = phiếu đang mở để duyệt + các sửa đổi kế toán chưa lưu
    SD.sua[stt] = {ma_vt, ten_vt, don_vi, so_luong, bo}; SD.them = [{ma_vt, ten_vt, don_vi, so_luong, ten_tren_phieu}]; SD.maDt = đối tác mới */
@@ -617,7 +644,13 @@ function veChiTietPhieu() {
   var suaDuoc = !laKiemMau && String(h.trang_thai) === 'CHO_DUYET';       // chỉ phiếu chờ duyệt mới sửa tại chỗ
   var cotDt = loai === 'PN' ? 'ma_dt' : 'ma_dt_nhan', maDtHien = SD.maDt || h[cotDt] || '';
   document.getElementById('ctTieuDe').textContent = so + (suaDuoc ? ' — chạm dòng để sửa' : '');
-  var anh = h.anh_phieu_url && h.anh_phieu_url.indexOf('http') === 0 ? '<a href="' + esc(h.anh_phieu_url) + '" target="_blank">🖼 Mở ảnh phiếu gốc</a><br>' : '';
+  var coAnh = h.anh_phieu_url && h.anh_phieu_url.indexOf('http') === 0, anh = '';
+  if (coAnh) {                                                                  // v1.2: ảnh phiếu hiện ngay trong màn duyệt
+    var da = ANH_CACHE[so];
+    anh = da ? '<img class="anh-duyet" src="' + da + '" onclick="xemAnhTo(\'' + esc(so) + '\')">' : '<div class="anh-cho" id="ctAnhCho">⏳ Đang tải ảnh phiếu…</div>';
+    anh += '<div class="nho-mo" style="text-align:right">' + (da ? 'Chạm ảnh để phóng to · ' : '') + '<a href="' + esc(h.anh_phieu_url) + '" target="_blank">Mở trên Drive</a></div>';
+    if (!da) taiAnhPhieu(loai, so);
+  }
   var doiTac;
   if (suaDuoc && DL && DL.doi_tac && DL.doi_tac.length) {
     var laTd = loai === 'PX' && !/TRA_THUE/.test(String(h.loai_giao_dich || ''));           // xuất thi công: bên nhận là tổ đội → không đổi ở đây
@@ -648,6 +681,19 @@ function veChiTietPhieu() {
       '<button class="nut ok" onclick="duyet(\'' + loai + '\',\'' + esc(so) + '\',true)">✔ ' + (n ? 'Lưu sửa đổi và duyệt' : 'Duyệt') + '</button>' +
       '<button class="nut do" onclick="traLai(\'' + loai + '\',\'' + esc(so) + '\')">Trả lại (phiếu sai hẳn)</button>';
 }
+var ANH_CACHE = {}, ANH_DANG_TAI = {};
+function taiAnhPhieu(loai, so) {
+  if (ANH_DANG_TAI[so]) return; ANH_DANG_TAI[so] = true;
+  api('anhPhieu', { loai: loai, so: so }, 60).then(function (kq) {
+    ANH_DANG_TAI[so] = false;
+    ANH_CACHE[so] = 'data:' + (kq.mime || 'image/jpeg') + ';base64,' + kq.base64;
+    if (SD && SD.so === so) veChiTietPhieu();
+  }).catch(function (e) {
+    ANH_DANG_TAI[so] = false;
+    var el = document.getElementById('ctAnhCho'); if (el) el.textContent = '⚠ ' + e.message;
+  });
+}
+function xemAnhTo(so) { var im = document.getElementById('anhTo'); im.src = ANH_CACHE[so] || ''; im.classList.remove('to'); document.getElementById('moAnh').classList.add('hien'); }
 /* sửa 1 dòng / thêm dòng */
 function moSuaDong(stt) {
   sdStt = stt;
