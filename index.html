@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.2.0 (GitHub Pages) · 02/09/2026
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.2.1 (GitHub Pages) · 02/09/2026
+  v1.2.1: tab Duyệt thêm nút "↻ Danh mục" (làm nóng cache máy chủ sau khi sửa VAT_TU / danh mục app báo cáo). Đi cùng Code v0.9.1.
   v1.2.0: ảnh phiếu hiện trong màn duyệt (chạm phóng to); mở tab Tồn kho / Duyệt hiện ngay bản đã có rồi tải mới ngầm;
           khoiTao gửi dm_ver — máy chủ không gửi lại 1.600 dòng danh mục nếu chưa đổi; overlay chờ hiện số giây. Đi cùng Code v0.9.
   v1.1.0: màn Duyệt — kế toán chạm dòng để đổi mã / SL / ĐVT, bỏ dòng thừa, thêm dòng AI sót, đổi đối tác,
@@ -164,7 +165,7 @@
 
 <!-- ======================= DUYỆT ======================= -->
 <div class="man" id="manDuyet">
-  <div class="the"><button class="nut phu nho" onclick="taiChoDuyet()">🔄 Làm mới</button><span class="nho-mo" id="duyetDem"></span></div>
+  <div class="the"><button class="nut phu nho" onclick="taiChoDuyet()">🔄 Làm mới</button><button class="nut phu nho" onclick="lamMoiDanhMuc()" title="Vừa sửa danh mục vật tư / đầu việc trên Sheet → bấm để app cập nhật ngay">↻ Danh mục</button><span class="nho-mo" id="duyetDem"></span></div>
   <h3 style="font-size:14px">Chờ duyệt</h3><div id="dsChoDuyet"></div>
   <h3 style="font-size:14px">Tự duyệt — cần kiểm mẫu</h3><div id="dsKiemMau"></div>
 </div>
@@ -610,6 +611,12 @@ function locTon() {
 
 /* ================= duyệt ================= */
 var DUYET_CACHE = null;
+function lamMoiDanhMuc() {                                 // v1.2.1: người duyệt vừa sửa VAT_TU / danh mục app báo cáo → làm nóng cache máy chủ rồi tải lại
+  tai(true, 'Đang làm mới danh mục trên máy chủ (10–20 s)…');
+  api('lamMoiCache', {}, 120).then(function () { return api('khoiTao', { dm_ver: '' }, 90); })
+    .then(function (kq) { tai(false); batDau(kq); luuPhien(DL); bao('Đã làm mới: ' + (kq.vat_tu ? kq.vat_tu.length : 0) + ' mã vật tư · ' + (kq.so_dau_viec_mo || 0) + ' việc đang mở'); })
+    .catch(function (e) { tai(false); bao(e.message); });
+}
 function taiChoDuyet() {
   if (DUYET_CACHE) veChoDuyet(DUYET_CACHE, true); else tai(true, 'Đang tải danh sách…');
   api('choDuyet', {}).then(function (kq) { tai(false); DUYET_CACHE = kq; veChoDuyet(kq, false); })
