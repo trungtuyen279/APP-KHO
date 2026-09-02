@@ -6,6 +6,6 @@
    VERSION : đổi mỗi lần phát hành để app báo "có bản mới"
    ============================================================ */
 const CONFIG = {
-  API_URL: 'DAN_URL_WEB_APP_VAO_DAY',
+  API_URL: 'https://script.google.com/macros/s/AKfycbxSQaIxDQkYNHAkeyCclvS-FeSg9g7FEPGuHoJaK2VUl-yTQp5PoAkVFsfwXNXhH4wrIQ/exec',
   VERSION: '1.0.0'
 };
