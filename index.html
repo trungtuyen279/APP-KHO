@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.0 (GitHub Pages) · 01/09/2026
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.0.2 (GitHub Pages) · 02/09/2026
+  v1.0.2: bấm Nhập kho / Nhận hàng thuê / Trả hàng thuê → chọn CHỤP ẢNH hoặc CHỌN ẢNH CÓ SẴN trong máy.
   Chạy trên GitHub Pages (repo riêng APP-KHO), gọi Apps Script qua fetch → Code.gs v0.7 (doPost).
   Đăng nhập email + PIN → token nhớ 30 ngày; mở lại app hiện ngay bản đã lưu rồi tải mới ngầm.
   Cách gọi API, cache, cài đặt bắt chước app báo cáo (APP-BAO-CAO). Giao diện = index v0.2.
@@ -97,8 +98,9 @@
     <button class="nut" onclick="chup('NHAP')">📥 Nhập kho (mua)</button>
     <button class="nut" onclick="chup('NHAN_THUE')">📦 Nhận hàng thuê</button>
     <button class="nut phu" onclick="chup('TRA_THUE')">↩️ Trả hàng thuê</button>
-    <input id="fileAnh" type="file" accept="image/*" capture="environment" style="display:none" onchange="anhDaChon(event)">
-    <div class="nho-mo">Chụp thẳng, đủ sáng, lấy trọn khung phiếu. Ảnh được nén trước khi gửi.</div>
+    <input id="fileAnhChup" type="file" accept="image/*" capture="environment" style="display:none" onchange="anhDaChon(event)">
+    <input id="fileAnhTai" type="file" accept="image/*" style="display:none" onchange="anhDaChon(event)">
+    <div class="nho-mo">Chụp thẳng, đủ sáng, lấy trọn khung phiếu — hoặc chọn ảnh phiếu đã có trong máy. Ảnh được nén trước khi gửi.</div>
   </div>
 </div>
 
@@ -163,6 +165,15 @@
   <button class="nut phu" onclick="dong('moPhieu')">Đóng</button>
 </div></div>
 
+<!-- Chọn nguồn ảnh: chụp mới hay ảnh có sẵn (v1.0.2) -->
+<div class="mo" id="moNguonAnh"><div>
+  <h3 style="margin:0 0 4px" id="naTieuDe">Lấy ảnh phiếu</h3>
+  <div class="nho-mo" style="margin-bottom:8px">Chọn kho / bãi: <b id="naKho"></b></div>
+  <button class="nut" onclick="layAnh('Chup')">📷 Chụp ảnh phiếu</button>
+  <button class="nut phu" onclick="layAnh('Tai')">🖼 Chọn ảnh có sẵn trong máy</button>
+  <button class="nut phu" onclick="dong('moNguonAnh')">Hủy</button>
+</div></div>
+
 <!-- Chọn mã cho dòng vàng/đỏ -->
 <div class="mo" id="moChonMa"><div>
   <h3 style="margin:0 0 4px">Chọn mã vật tư</h3>
@@ -190,6 +201,7 @@ var OCR = null;         // kết quả ocrPhieu đang kiểm tra
 var loaiDangChup = ''; var dongDangChon = -1; var xtDong = []; var tonRows = [];
 var DV_CHON = null; var dvTimer = null; var maDaXuat = '';
 var THIET_BI = navigator.userAgent.slice(0, 80);
+var TEN_LOAI = { NHAP: 'Nhập kho (mua)', NHAN_THUE: 'Nhận hàng thuê', TRA_THUE: 'Trả hàng thuê' };
 
 var TOKEN = '';         // token đăng nhập (Code.gs v0.7 cấp, hạn 30 ngày)
 var CHUA_CO_API = !CONFIG.API_URL || CONFIG.API_URL.indexOf('DAN_URL') === 0;
@@ -303,7 +315,16 @@ function batDau(kq) {
 }
 
 /* ================= chụp + nén ảnh ================= */
-function chup(loai) { loaiDangChup = loai; document.getElementById('fileAnh').value = ''; document.getElementById('fileAnh').click(); }
+function chup(loai) {                                   // v1.0.2: hỏi chụp mới hay lấy ảnh có sẵn
+  loaiDangChup = loai;
+  document.getElementById('naTieuDe').textContent = TEN_LOAI[loai] + ' — lấy ảnh phiếu';
+  var k = document.getElementById('chonKho'); document.getElementById('naKho').textContent = k.options[k.selectedIndex] ? k.options[k.selectedIndex].text : '';
+  document.getElementById('moNguonAnh').classList.add('hien');
+}
+function layAnh(nguon) {
+  dong('moNguonAnh');
+  var inp = document.getElementById('fileAnh' + nguon); inp.value = ''; inp.click();
+}
 function anhDaChon(ev) {
   var f = ev.target.files && ev.target.files[0]; if (!f) return;
   tai(true, 'Đang nén ảnh…');
@@ -328,7 +349,6 @@ function anhDaChon(ev) {
 }
 
 /* ================= màn kiểm tra ================= */
-var TEN_LOAI = { NHAP: 'Nhập kho (mua)', NHAN_THUE: 'Nhận hàng thuê', TRA_THUE: 'Trả hàng thuê' };
 function veKiemTra() {
   var k = OCR.ket_qua, h = k.header;
   document.getElementById('ktCanhBao').innerHTML =
