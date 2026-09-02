@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#C00000">
+<title>Cài app KHO CÔNG TRƯỜNG — LICOGI13FC</title>
+<style>
+:root{--brand:#C00000;--brand-pure:#FF0000;--vang:#FFFF00;--ink:#1F2A37;--ink-2:#5A6875;--line:#D3D8DD}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,"Segoe UI",sans-serif;color:var(--ink);background:#EEF0F2;display:flex;justify-content:center}
+.wrap{max-width:480px;width:100%;background:#fff;min-height:100vh}
+.top{background:var(--brand);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:10px}
+.top img{width:32px;height:32px;background:#fff;border-radius:5px;object-fit:contain}
+.top b{font-size:15px}
+.sec{background:var(--brand-pure);color:var(--vang);font-weight:bold;font-size:13px;padding:6px 14px}
+main{padding:16px 14px 40px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.tabs button{border:1.5px solid var(--line);background:#fff;color:var(--ink-2);font-family:inherit;font-size:14px;font-weight:bold;padding:11px;border-radius:6px;cursor:pointer}
+.tabs button.on{border-color:var(--brand);color:var(--brand);background:#FFF5F5}
+.step{display:flex;gap:11px;margin-bottom:15px}
+.step .n{width:26px;height:26px;flex:none;border-radius:50%;background:var(--brand);color:#fff;font-weight:bold;font-size:14px;display:flex;align-items:center;justify-content:center}
+.step h3{font-size:14.5px;margin-bottom:3px}
+.step p{font-size:13.5px;color:var(--ink-2);line-height:1.5}
+.warn{background:#FFF4CE;border-left:4px solid #E0A800;padding:11px 12px;font-size:13px;line-height:1.5;border-radius:0 5px 5px 0;margin-bottom:16px}
+.ok{background:#E4F3EA;border-left:4px solid #157F4B;padding:11px 12px;font-size:13px;line-height:1.5;border-radius:0 5px 5px 0;margin-top:16px}
+.pane{display:none}.pane.show{display:block}
+.foot{background:var(--brand);color:#fff;text-align:center;font-size:10.5px;padding:6px}
+h2{font-size:15px;margin:20px 0 10px;padding-top:16px;border-top:1.5px solid var(--line)}
+a{color:var(--brand)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><img src="icons/logo.png" alt=""><b>CÀI APP KHO CÔNG TRƯỜNG</b></div>
+  <div class="sec">HƯỚNG DẪN CHO THỦ KHO · KẾ TOÁN KHO · CHT</div>
+  <main>
+    <div class="tabs">
+      <button id="tIos" onclick="pick('ios')">iPhone / iPad</button>
+      <button id="tAnd" onclick="pick('and')">Android</button>
+    </div>
+
+    <!-- iOS -->
+    <div class="pane" id="p-ios">
+      <div class="warn"><b>Bắt buộc dùng trình duyệt Safari.</b> Mở link bằng Chrome, Zalo hay Messenger
+        sẽ không cài được. Nếu đang mở trong Zalo: bấm nút ⋯ góc trên → <b>Mở trong Safari</b>.</div>
+      <div class="step"><div class="n">1</div><div><h3>Mở link bằng Safari</h3>
+        <p>Dán địa chỉ app kho vào thanh tìm kiếm của Safari và mở lên.</p></div></div>
+      <div class="step"><div class="n">2</div><div><h3>Bấm nút Chia sẻ</h3>
+        <p>Biểu tượng ô vuông có mũi tên đi lên, nằm ở thanh dưới màn hình.</p></div></div>
+      <div class="step"><div class="n">3</div><div><h3>Chọn "Thêm vào MH chính"</h3>
+        <p>Kéo danh sách xuống một chút mới thấy. Tiếng Anh là <i>Add to Home Screen</i>.</p></div></div>
+      <div class="step"><div class="n">4</div><div><h3>Bấm Thêm</h3>
+        <p>Biểu tượng <b>Kho BCH</b> (logo LICOGI13FC nền đen) xuất hiện trên màn hình chính, tên "Kho BCH" phân biệt với app "Báo cáo BCH". Từ nay mở app bằng biểu tượng này.</p></div></div>
+      <div class="step"><div class="n">5</div><div><h3>Mở app, cho phép dùng máy ảnh</h3>
+        <p>Khi bấm "Chụp phiếu" lần đầu, máy hỏi quyền máy ảnh — chọn <b>Cho phép</b>.</p></div></div>
+    </div>
+
+    <!-- Android -->
+    <div class="pane" id="p-and">
+      <div class="step"><div class="n">1</div><div><h3>Mở link bằng Chrome</h3>
+        <p>Nếu đang mở trong Zalo: bấm ⋮ góc trên phải → <b>Mở bằng trình duyệt</b>.</p></div></div>
+      <div class="step"><div class="n">2</div><div><h3>Bấm "Cài đặt ứng dụng"</h3>
+        <p>Thanh gợi ý hiện ở đáy màn hình. Không thấy thì bấm ⋮ góc trên phải →
+          <b>Thêm vào Màn hình chính</b>.</p></div></div>
+      <div class="step"><div class="n">3</div><div><h3>Xác nhận Cài đặt</h3>
+        <p>Biểu tượng <b>Kho BCH</b> xuất hiện trong danh sách ứng dụng và màn hình chính.</p></div></div>
+      <div class="step"><div class="n">4</div><div><h3>Mở app, cho phép dùng máy ảnh</h3>
+        <p>Chọn <b>Cho phép</b> khi máy hỏi quyền máy ảnh lúc chụp phiếu lần đầu.</p></div></div>
+    </div>
+
+    <div class="ok"><b>Kiểm tra đã cài đúng chưa:</b> mở app từ biểu tượng, nếu <b>không thấy thanh địa chỉ
+      web</b> ở phía trên là đạt. Đăng nhập bằng email + mã PIN (PIN giống app Báo cáo). Đăng nhập một lần, app nhớ 30 ngày.</div>
+
+    <h2>Ba quy tắc khi dùng ở kho</h2>
+    <div class="step"><div class="n">1</div><div><h3>Chụp phiếu ngay khi nhận hàng</h3>
+      <p>Chụp thẳng, đủ sáng, lấy trọn khung phiếu. Phải có mạng mới gửi được — ra chỗ có sóng rồi mới chụp.</p></div></div>
+    <div class="step"><div class="n">2</div><div><h3>Dòng vàng / đỏ phải chạm để chọn lại mã</h3>
+      <p>Dòng xanh là AI đọc chắc. Dòng vàng cần thủ kho nhìn lại số lượng; dòng đỏ chưa có mã vật tư — chạm vào dòng để chọn mã hoặc tạo mã tạm.</p></div></div>
+    <div class="step"><div class="n">3</div><div><h3>Xuất kho phải chọn đúng đầu việc</h3>
+      <p>Gõ mã hoặc tên việc (ví dụ "2A2-9", "xây tường tầng 5") rồi chạm chọn trong danh sách. Không chọn đầu việc thì không gửi được phiếu.</p></div></div>
+  </main>
+  <div class="foot">licogi13fc.com.vn</div>
+</div>
+<script>
+function pick(k){
+  document.getElementById('p-ios').classList.toggle('show', k==='ios');
+  document.getElementById('p-and').classList.toggle('show', k==='and');
+  document.getElementById('tIos').classList.toggle('on', k==='ios');
+  document.getElementById('tAnd').classList.toggle('on', k==='and');
+}
+pick(/iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'ios' : 'and');
+</script>
+</body>
+</html>
