@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.0.2 (GitHub Pages) · 02/09/2026
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.1.0 (GitHub Pages) · 02/09/2026
+  v1.1.0: màn Duyệt — kế toán chạm dòng để đổi mã / SL / ĐVT, bỏ dòng thừa, thêm dòng AI sót, đổi đối tác,
+          rồi "Lưu sửa đổi và duyệt" (Code v0.8 apiSuaPhieu). Trả lại chỉ khi phiếu sai hẳn.
   v1.0.2: bấm Nhập kho / Nhận hàng thuê / Trả hàng thuê → chọn CHỤP ẢNH hoặc CHỌN ẢNH CÓ SẴN trong máy.
   Chạy trên GitHub Pages (repo riêng APP-KHO), gọi Apps Script qua fetch → Code.gs v0.7 (doPost).
   Đăng nhập email + PIN → token nhớ 30 ngày; mở lại app hiện ngay bản đã lưu rồi tải mới ngầm.
@@ -67,6 +69,8 @@
   .tai.hien{display:block}
   .nho-mo{font-size:12px;color:#777}
   .ds-item{padding:10px;border:1px solid var(--vien);border-radius:8px;margin:6px 0;background:#fff}
+  tr.da-sua td{background:#e3f2fd} tr.bo-dong td{text-decoration:line-through;opacity:.55}
+  .sua-nhac{font-size:12px;color:#1565c0}
 </style>
 </head>
 <body>
@@ -172,6 +176,23 @@
   <button class="nut" onclick="layAnh('Chup')">📷 Chụp ảnh phiếu</button>
   <button class="nut phu" onclick="layAnh('Tai')">🖼 Chọn ảnh có sẵn trong máy</button>
   <button class="nut phu" onclick="dong('moNguonAnh')">Hủy</button>
+</div></div>
+
+<!-- Kế toán sửa 1 dòng phiếu trước khi duyệt (v1.1) -->
+<div class="mo" id="moSuaDong"><div>
+  <h3 style="margin:0 0 4px" id="sdTieuDe">Sửa dòng</h3>
+  <div class="nho-mo" id="sdPhieu"></div>
+  <div class="goi-y" id="sdMaHienTai" style="border-color:var(--ok)"></div>
+  <label>Đổi mã vật tư — gõ tên hoặc mã</label>
+  <input id="sdTim" placeholder="VD: cát vàng, VT-CL-005…" oninput="timVatTu(this.value,'sdKQ',chonMaSua)" autocomplete="off">
+  <div id="sdKQ"></div>
+  <div style="display:flex;gap:8px">
+    <div style="flex:1"><label>Số lượng</label><input id="sdSL" type="number" step="any" inputmode="decimal"></div>
+    <div style="flex:1"><label>ĐVT</label><input id="sdDVT"></div>
+  </div>
+  <button class="nut ok" onclick="apDungSuaDong()">Áp dụng</button>
+  <button class="nut do" id="sdBo" onclick="boDongSua()">🗑 Bỏ dòng này (AI đọc thừa)</button>
+  <button class="nut phu" onclick="dong('moSuaDong')">Đóng</button>
 </div></div>
 
 <!-- Chọn mã cho dòng vàng/đỏ -->
@@ -396,7 +417,7 @@ function timVatTu(tu, idKQ, onChon) {
     if (boDau(v[0]).indexOf(q) >= 0 || boDau(v[1]).indexOf(q) >= 0) kq.push(v);
   }
   el.innerHTML = kq.map(function (v) {
-    var fn = onChon === chonMaTuTim ? "chonMaTuTim('" + esc(v[0]) + "')" : "themDongXuat('" + esc(v[0]) + "')";
+    var fn = (onChon ? onChon.name : 'themDongXuat') + "('" + esc(v[0]) + "')";
     return '<div class="goi-y" onclick="' + fn + '"><b>' + esc(v[0]) + '</b> · ' + esc(v[1]) + ' <span class="nho-mo">(' + esc(v[2]) + ')</span></div>';
   }).join('');
 }
@@ -578,29 +599,112 @@ function taiChoDuyet() {
     document.getElementById('duyetDem').textContent = kq.cho_duyet.length + ' chờ duyệt · ' + kq.kiem_mau.length + ' cần kiểm mẫu';
   }).catch(function (e) { tai(false); bao(e.message); });
 }
+/* v1.1: SD = phiếu đang mở để duyệt + các sửa đổi kế toán chưa lưu
+   SD.sua[stt] = {ma_vt, ten_vt, don_vi, so_luong, bo}; SD.them = [{ma_vt, ten_vt, don_vi, so_luong, ten_tren_phieu}]; SD.maDt = đối tác mới */
+var SD = null, sdStt = null;
 function moPhieu(loai, so, laKiemMau) {
   tai(true, 'Đang mở phiếu…');
   api('chiTietPhieu', { loai: loai, so: so }).then(function (kq) {
     tai(false);
-    var h = kq.header;
-    document.getElementById('ctTieuDe').textContent = so;
-    var anh = h.anh_phieu_url && h.anh_phieu_url.indexOf('http') === 0 ? '<a href="' + esc(h.anh_phieu_url) + '" target="_blank">🖼 Mở ảnh phiếu gốc</a><br>' : '';
-    document.getElementById('ctNoiDung').innerHTML = anh +
-      '<div class="nho-mo">' + esc(h.loai_giao_dich || '') + ' · ' + esc(h.ma_kho || '') + ' · đối tác ' + esc(h.ma_dt || h.ma_dt_nhan || '') + (h.ma_viec ? ' · việc ' + esc(h.ma_viec) : '') + (h.ly_do_duyet ? '<br>' + esc(h.ly_do_duyet) : '') + '</div>' +
-      '<table><thead><tr><th>Vật tư</th><th>SL</th><th>Màu</th></tr></thead><tbody>' +
-      kq.dong.map(function (d) {
-        return '<tr class="dong-' + (d.mau || 'XANH') + '"><td>' + esc(d.ma_vt) + ' · ' + esc(d.ten_vt) + (d.ten_tren_phieu ? '<br><span class="nho-mo">phiếu: ' + esc(d.ten_tren_phieu) + '</span>' : '') + '</td>' +
-          '<td>' + (d.so_luong == null ? '' : d.so_luong) + ' ' + esc(d.don_vi) + '</td><td>' + (d.mau ? '<span class="tem ' + d.mau + '">' + d.mau + '</span>' : '') + '</td></tr>';
-      }).join('') + '</tbody></table>';
-    document.getElementById('ctNutDuyet').innerHTML = laKiemMau
-      ? '<button class="nut ok" onclick="daKiemMau(\'' + loai + '\',\'' + esc(so) + '\')">✔ Đã kiểm — số liệu đúng</button>' +
-        '<button class="nut do" onclick="traLai(\'' + loai + '\',\'' + esc(so) + '\')">Phiếu AUTO sai — hủy phiếu</button>'
-      : '<button class="nut ok" onclick="duyet(\'' + loai + '\',\'' + esc(so) + '\',true)">✔ Duyệt</button>' +
-        '<button class="nut do" onclick="traLai(\'' + loai + '\',\'' + esc(so) + '\')">Trả lại</button>';
+    SD = { loai: loai, so: so, header: kq.header, dong: kq.dong, laKiemMau: !!laKiemMau, sua: {}, them: [], maDt: '' };
+    veChiTietPhieu();
     document.getElementById('moPhieu').classList.add('hien');
   }).catch(function (e) { tai(false); bao(e.message); });
 }
+function soSuaChoLuu() { return Object.keys(SD.sua).length + SD.them.length + (SD.maDt ? 1 : 0); }
+function veChiTietPhieu() {
+  var h = SD.header, loai = SD.loai, so = SD.so, laKiemMau = SD.laKiemMau;
+  var suaDuoc = !laKiemMau && String(h.trang_thai) === 'CHO_DUYET';       // chỉ phiếu chờ duyệt mới sửa tại chỗ
+  var cotDt = loai === 'PN' ? 'ma_dt' : 'ma_dt_nhan', maDtHien = SD.maDt || h[cotDt] || '';
+  document.getElementById('ctTieuDe').textContent = so + (suaDuoc ? ' — chạm dòng để sửa' : '');
+  var anh = h.anh_phieu_url && h.anh_phieu_url.indexOf('http') === 0 ? '<a href="' + esc(h.anh_phieu_url) + '" target="_blank">🖼 Mở ảnh phiếu gốc</a><br>' : '';
+  var doiTac;
+  if (suaDuoc && DL && DL.doi_tac && DL.doi_tac.length) {
+    var laTd = loai === 'PX' && !/TRA_THUE/.test(String(h.loai_giao_dich || ''));           // xuất thi công: bên nhận là tổ đội → không đổi ở đây
+    doiTac = laTd ? 'bên nhận ' + esc(maDtHien) : '<label>Đối tác</label><select id="ctMaDt" onchange="SD.maDt=this.value;veChiTietPhieu()"><option value="">— chọn —</option>' +
+      DL.doi_tac.map(function (d) { return '<option value="' + esc(d.ma_dt) + '"' + (d.ma_dt === maDtHien ? ' selected' : '') + '>' + esc(d.ten_dt) + '</option>'; }).join('') + '</select>';
+  } else doiTac = 'đối tác ' + esc(maDtHien);
+  var html = anh + '<div class="nho-mo">' + esc(h.loai_giao_dich || '') + ' · ' + esc(h.ma_kho || '') + (h.ma_viec ? ' · việc ' + esc(h.ma_viec) : '') + (h.ten_ncc_tren_phieu ? '<br>Trên phiếu: ' + esc(h.ten_ncc_tren_phieu) : '') + (h.ly_do_duyet ? '<br>' + esc(h.ly_do_duyet) : '') + '</div>' + doiTac +
+    '<table><thead><tr><th>Vật tư</th><th>SL</th><th>Màu</th></tr></thead><tbody>';
+  SD.dong.forEach(function (d) {
+    var sx = SD.sua[d.stt], bo = sx && sx.bo;
+    var ma = sx && sx.ma_vt ? sx.ma_vt : d.ma_vt, ten = sx && sx.ma_vt ? sx.ten_vt : d.ten_vt;
+    var sl = sx && sx.so_luong !== undefined ? sx.so_luong : d.so_luong, dvt = sx && sx.don_vi ? sx.don_vi : d.don_vi;
+    html += '<tr class="dong-' + (d.mau || 'XANH') + (sx ? ' da-sua' : '') + (bo ? ' bo-dong' : '') + '"' + (suaDuoc ? ' onclick="moSuaDong(' + d.stt + ')"' : '') + '><td>' +
+      esc(ma) + ' · ' + esc(ten) + (d.ten_tren_phieu ? '<br><span class="nho-mo">phiếu: ' + esc(d.ten_tren_phieu) + '</span>' : '') + (sx && !bo ? '<br><span class="sua-nhac">✎ đã sửa (chưa lưu)</span>' : '') + (bo ? '<br><span class="sua-nhac">🗑 bỏ dòng</span>' : '') + '</td>' +
+      '<td>' + (sl == null ? '' : sl) + ' ' + esc(dvt) + '</td><td>' + (d.mau ? '<span class="tem ' + d.mau + '">' + d.mau + '</span>' : '') + '</td></tr>';
+  });
+  SD.them.forEach(function (t, i) {
+    html += '<tr class="dong-VANG da-sua" onclick="SD.them.splice(' + i + ',1);veChiTietPhieu()"><td>' + esc(t.ma_vt) + ' · ' + esc(t.ten_vt) + '<br><span class="sua-nhac">＋ dòng thêm (chạm để bỏ)</span></td><td>' + t.so_luong + ' ' + esc(t.don_vi) + '</td><td></td></tr>';
+  });
+  html += '</tbody></table>';
+  if (suaDuoc) html += '<button class="nut phu nho" onclick="moSuaDong(null)">＋ Thêm dòng AI bỏ sót</button>';
+  document.getElementById('ctNoiDung').innerHTML = html;
+  var n = suaDuoc ? soSuaChoLuu() : 0;
+  document.getElementById('ctNutDuyet').innerHTML = laKiemMau
+    ? '<button class="nut ok" onclick="daKiemMau(\'' + loai + '\',\'' + esc(so) + '\')">✔ Đã kiểm — số liệu đúng</button>' +
+      '<button class="nut do" onclick="traLai(\'' + loai + '\',\'' + esc(so) + '\')">Phiếu AUTO sai — hủy phiếu</button>'
+    : (n ? '<button class="nut" onclick="luuSuaPhieu()">💾 Lưu ' + n + ' sửa đổi</button>' : '') +
+      '<button class="nut ok" onclick="duyet(\'' + loai + '\',\'' + esc(so) + '\',true)">✔ ' + (n ? 'Lưu sửa đổi và duyệt' : 'Duyệt') + '</button>' +
+      '<button class="nut do" onclick="traLai(\'' + loai + '\',\'' + esc(so) + '\')">Trả lại (phiếu sai hẳn)</button>';
+}
+/* sửa 1 dòng / thêm dòng */
+function moSuaDong(stt) {
+  sdStt = stt;
+  var d = stt === null ? null : SD.dong.filter(function (x) { return x.stt == stt; })[0];
+  var sx = d ? SD.sua[d.stt] : null;
+  document.getElementById('sdTieuDe').textContent = d ? 'Sửa dòng ' + d.stt : 'Thêm dòng AI bỏ sót';
+  document.getElementById('sdPhieu').textContent = d && d.ten_tren_phieu ? 'Trên phiếu ghi: ' + d.ten_tren_phieu : (d ? '' : 'Nhập đúng như phiếu giấy');
+  var maHien = d ? (sx && sx.ma_vt ? sx.ma_vt + ' · ' + sx.ten_vt : (d.ma_vt ? d.ma_vt + ' · ' + d.ten_vt : 'chưa có mã')) : 'chưa chọn mã';
+  document.getElementById('sdMaHienTai').innerHTML = 'Mã hiện tại: <b id="sdMa">' + esc(maHien) + '</b>';
+  document.getElementById('sdMaHienTai').dataset.ma = d ? (sx && sx.ma_vt ? sx.ma_vt : d.ma_vt || '') : '';
+  document.getElementById('sdMaHienTai').dataset.ten = d ? (sx && sx.ma_vt ? sx.ten_vt : d.ten_vt || '') : '';
+  document.getElementById('sdTim').value = ''; document.getElementById('sdKQ').innerHTML = '';
+  document.getElementById('sdSL').value = d ? (sx && sx.so_luong !== undefined ? sx.so_luong : (d.so_luong == null ? '' : d.so_luong)) : '';
+  document.getElementById('sdDVT').value = d ? (sx && sx.don_vi ? sx.don_vi : d.don_vi || '') : '';
+  document.getElementById('sdBo').style.display = d ? '' : 'none';
+  document.getElementById('moSuaDong').classList.add('hien');
+}
+function chonMaSua(ma) {
+  var v = timVt(ma); if (!v) return;
+  var el = document.getElementById('sdMaHienTai'); el.dataset.ma = v[0]; el.dataset.ten = v[1];
+  document.getElementById('sdMa').textContent = v[0] + ' · ' + v[1];
+  if (!document.getElementById('sdDVT').value) document.getElementById('sdDVT').value = v[2];
+  document.getElementById('sdTim').value = ''; document.getElementById('sdKQ').innerHTML = '';
+}
+function apDungSuaDong() {
+  var el = document.getElementById('sdMaHienTai'), ma = el.dataset.ma, ten = el.dataset.ten;
+  var sl = document.getElementById('sdSL').value, dvt = document.getElementById('sdDVT').value.trim();
+  if (!ma) return bao('Chưa chọn mã vật tư');
+  if (sl === '' || !(parseFloat(sl) >= 0)) return bao('Số lượng không hợp lệ');
+  if (sdStt === null) {
+    if (!(parseFloat(sl) > 0)) return bao('Dòng thêm phải có số lượng > 0');
+    SD.them.push({ ma_vt: ma, ten_vt: ten, don_vi: dvt, so_luong: parseFloat(sl), ten_tren_phieu: '' });
+  } else {
+    var d = SD.dong.filter(function (x) { return x.stt == sdStt; })[0], sx = {};
+    if (ma !== d.ma_vt) { sx.ma_vt = ma; sx.ten_vt = ten; }
+    if (dvt && dvt !== (d.don_vi || '')) sx.don_vi = dvt;
+    if (parseFloat(sl) !== parseFloat(d.so_luong)) sx.so_luong = parseFloat(sl);
+    if (Object.keys(sx).length) SD.sua[d.stt] = sx; else delete SD.sua[d.stt];
+  }
+  dong('moSuaDong'); veChiTietPhieu();
+}
+function boDongSua() { if (sdStt === null) return; SD.sua[sdStt] = { bo: true }; dong('moSuaDong'); veChiTietPhieu(); }
+function luuSuaPhieu(sauDo) {
+  var payload = { loai: SD.loai, so: SD.so, thiet_bi: THIET_BI, ma_dt: SD.maDt || undefined,
+    dong: Object.keys(SD.sua).map(function (stt) { var x = SD.sua[stt]; return { stt: Number(stt), ma_vt: x.ma_vt, don_vi: x.don_vi, so_luong: x.so_luong, bo: !!x.bo }; }),
+    them: SD.them.map(function (t) { return { ma_vt: t.ma_vt, so_luong: t.so_luong, don_vi: t.don_vi, ten_tren_phieu: t.ten_tren_phieu }; }) };
+  tai(true, 'Đang lưu sửa đổi…');
+  return api('suaPhieu', payload).then(function (kq) {
+    tai(false);
+    SD.sua = {}; SD.them = []; SD.maDt = '';                                  // đã lưu → không còn sửa đổi treo
+    if (kq.hoc && kq.hoc.length) bao('Đã lưu. App học thêm từ khóa: ' + kq.hoc.join(', '));
+    if (sauDo) return sauDo();
+    moPhieu(SD.loai, SD.so, false);
+  }).catch(function (e) { tai(false); bao('Lỗi lưu sửa đổi: ' + e.message); throw e; });
+}
 function duyet(loai, so, dongY, lyDo) {
+  if (dongY && SD && SD.so === so && soSuaChoLuu()) { luuSuaPhieu(function () { duyet(loai, so, true); }).catch(function () { }); return; }   // v1.1: lưu sửa rồi mới duyệt
   tai(true, 'Đang ghi…');
   api('duyet', { loai: loai, so: so, dong_y: dongY, ly_do: lyDo || '', thiet_bi: THIET_BI }).then(function (kq) {
     tai(false);
