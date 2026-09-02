@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.2.1 (GitHub Pages) · 02/09/2026
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.3.0 (GitHub Pages) · 03/09/2026
+  v1.3.0: Xuất kho thêm "CBKT phụ trách" (NHAN_SU app báo cáo) và "Phân khu" (cột phan_khu danh mục) — chọn phân khu lọc đầu việc,
+          chọn đầu việc tự điền phân khu; ghi cbkt_email/cbkt_ten vào PHIEU_XUAT. Đi cùng Code v0.10.
   v1.2.1: tab Duyệt thêm nút "↻ Danh mục" (làm nóng cache máy chủ sau khi sửa VAT_TU / danh mục app báo cáo). Đi cùng Code v0.9.1.
   v1.2.0: ảnh phiếu hiện trong màn duyệt (chạm phóng to); mở tab Tồn kho / Duyệt hiện ngay bản đã có rồi tải mới ngầm;
           khoiTao gửi dm_ver — máy chủ không gửi lại 1.600 dòng danh mục nếu chưa đổi; overlay chờ hiện số giây. Đi cùng Code v0.9.
@@ -138,10 +140,12 @@
 <div class="man" id="manXuat">
   <div class="the">
     <label>Kho / bãi</label><select id="xtKho" onchange="doiKhoXuat()"></select>
+    <label>CBKT phụ trách (từ NHAN_SU app báo cáo)</label><select id="xtCbkt"></select>
     <label>Bên nhận (tổ đội / thầu phụ)</label><select id="xtBenNhan"></select>
+    <label>Phân khu (cột phan_khu danh mục — chọn để lọc đầu việc)</label><select id="xtPhanKhu" onchange="doiPhanKhu()"></select>
     <label>Đầu việc (bắt buộc — từ app báo cáo) <span class="nho-mo" id="dvDem"></span></label>
     <div id="dvDaChon" class="goi-y" style="display:none;border-color:var(--ok)"></div>
-    <input id="dvTim" placeholder="Gõ mã (2A2-9), tên việc, phân khu, tầng…" oninput="timDauViecGo(this.value)" autocomplete="off">
+    <input id="dvTim" placeholder="Gõ mã (2A2-9), tên việc, tầng…" oninput="timDauViecGo(this.value)" autocomplete="off">
     <div id="dvKQ"></div>
     <label>Người nhận (tên người ký)</label><input id="xtNguoiNhan" placeholder="VD: A. Tuấn — tổ xây">
   </div>
@@ -497,6 +501,12 @@ function guiPhieu() {
 function capNhatDauViec(kq) {
   DV_CHON = null; document.getElementById('dvDaChon').style.display = 'none';
   document.getElementById('dvTim').value = ''; document.getElementById('dvKQ').innerHTML = '';
+  // v1.3: CBKT phụ trách + phân khu của dự án đang xuất
+  var cb = kq.cbkt || [];
+  document.getElementById('xtCbkt').innerHTML = (cb.length ? '<option value="">— chọn CBKT —</option>' : '<option value="">(NHAN_SU app báo cáo chưa có CBKT cho dự án này)</option>') +
+    cb.map(function (c) { return '<option value="' + esc(c.email) + '" data-ten="' + esc(c.ho_ten) + '" data-pv="' + esc(c.pham_vi || '') + '">' + esc(c.ho_ten || c.email) + ' (' + (c.vai_tro === 'CHT_DUYET' ? 'CHT' : 'CBKT') + (c.pham_vi && c.pham_vi !== 'Tất cả' ? ' · ' + esc(c.pham_vi) : '') + ')</option>'; }).join('');
+  var pk = kq.phan_khu_ds || [];
+  document.getElementById('xtPhanKhu').innerHTML = '<option value="">— tất cả phân khu —</option>' + pk.map(function (p) { return '<option value="' + esc(p) + '">' + esc(p) + '</option>'; }).join('');
   var n = kq.so_dau_viec_mo || 0;
   document.getElementById('dvDem').textContent = kq.ket_noi_bao_cao ? '(' + n + ' việc đang mở của ' + (maDaXuat || '?') + ')' : '(chưa nối app báo cáo — gõ mã tay)';
   // dự án nhỏ: server gửi thẳng danh sách → hiện luôn để chạm chọn
@@ -509,21 +519,30 @@ function veKQDauViec(list, tong) {
       '<br><span class="nho-mo">' + esc(v.phan_khu || '') + (v.zone ? ' · ' + esc(v.zone) : '') + ' · ' + esc(v.tinh_trang || '') + '</span></div>';
   }).join('') + (tong > list.length ? '<div class="nho-mo">… còn ' + (tong - list.length) + ' việc nữa — gõ thêm từ khóa để thu hẹp</div>' : '');
 }
+function doiPhanKhu() {                                  // v1.3: đổi phân khu → lọc lại gợi ý; gợi ý CBKT có phạm vi trùng
+  var pk = document.getElementById('xtPhanKhu').value;
+  if (DV_CHON && pk && DV_CHON.phan_khu !== pk) boDauViec();
+  var cb = document.getElementById('xtCbkt');
+  if (pk && !cb.value) for (var i = 0; i < cb.options.length; i++) if ((cb.options[i].dataset.pv || '').indexOf(pk) >= 0) { cb.value = cb.options[i].value; break; }
+  timDauViecGo(document.getElementById('dvTim').value);
+}
 function timDauViecGo(tu) {
   clearTimeout(dvTimer);
-  var q = tu.trim();
-  if (q.length < 2) { document.getElementById('dvKQ').innerHTML = ''; return; }
+  var q = tu.trim(), pk = document.getElementById('xtPhanKhu').value;
+  if (q.length < 2 && !pk) { document.getElementById('dvKQ').innerHTML = ''; return; }
   dvTimer = setTimeout(function () {
     if (!DL.ket_noi_bao_cao) return;
     document.getElementById('dvKQ').innerHTML = '<div class="nho-mo">Đang tìm…</div>';
-    api('timDauViec', { ma_da: maDaXuat, tu_khoa: q, gioi_han: 30 }).then(function (kq) {
-      if (!kq.ket_qua.length) { document.getElementById('dvKQ').innerHTML = '<div class="nho-mo">Không có đầu việc đang mở khớp "' + esc(q) + '"</div>'; return; }
+    api('timDauViec', { ma_da: maDaXuat, tu_khoa: q, gioi_han: 30, phan_khu: pk }).then(function (kq) {
+      if (!kq.ket_qua.length) { document.getElementById('dvKQ').innerHTML = '<div class="nho-mo">Không có đầu việc đang mở khớp "' + esc(q) + '"' + (pk ? ' trong ' + esc(pk) : '') + '</div>'; return; }
       veKQDauViec(kq.ket_qua, kq.tong);
     }).catch(function (e) { document.getElementById('dvKQ').innerHTML = '<div class="canh-bao">' + esc(e.message) + '</div>'; });
   }, 450);
 }
 function chonDauViec(v) {
   DV_CHON = v;
+  var pkSel = document.getElementById('xtPhanKhu');                       // v1.3: tự điền phân khu theo đầu việc
+  if (v.phan_khu && !pkSel.value) { for (var i = 0; i < pkSel.options.length; i++) if (pkSel.options[i].value === v.phan_khu) { pkSel.value = v.phan_khu; break; } }
   var el = document.getElementById('dvDaChon');
   el.style.display = 'block';
   el.innerHTML = '✔ <b>' + esc(v.ma_viec) + '</b> · ' + esc(v.ten_viec) + ' <span class="nho-mo">' + esc(v.phan_khu || '') + '</span> <a href="#" onclick="boDauViec();return false" style="float:right">đổi</a>';
@@ -569,17 +588,20 @@ function guiXuatTay() {
   if (!xtDong.length) return bao('Chưa có dòng vật tư nào');
   var maViec = maViecDaChon();
   if (!maViec) return bao('Xuất thi công bắt buộc chọn đầu việc: gõ vào ô "Đầu việc" rồi chạm chọn trong danh sách');
+  var cb = document.getElementById('xtCbkt'), cbOpt = cb.options[cb.selectedIndex];
+  if (cb.options.length > 1 && !cb.value) return bao('Chưa chọn CBKT phụ trách');
+  var pk = document.getElementById('xtPhanKhu').value || (DV_CHON ? DV_CHON.phan_khu || '' : '');
   tai(true, 'Đang ghi phiếu xuất…');
   api('xuatTay', {
     ma_da: DL.user.ma_da, ma_kho: document.getElementById('xtKho').value,
     ma_dt_nhan: document.getElementById('xtBenNhan').value, ma_viec: maViec,
-    phan_khu: DV_CHON ? (DV_CHON.phan_khu || '') + (DV_CHON.zone ? ' · ' + DV_CHON.zone : '') : '',
+    phan_khu: pk, cbkt_email: cb.value || '', cbkt_ten: cb.value && cbOpt ? (cbOpt.dataset.ten || '') : '',
     nguoi_nhan: document.getElementById('xtNguoiNhan').value, thiet_bi: THIET_BI,
     dong: xtDong.map(function (d) { return { ma_vt: d.ma_vt, ten_vt: d.ten_vt, don_vi: d.don_vi, so_luong: parseFloat(d.so_luong) || 0 }; })
   }).then(function (kq) {
     tai(false);
     bao('Đã ghi phiếu ' + kq.so_phieu + ' — chờ kế toán duyệt');
-    xtDong = []; veBangXuat(); document.getElementById('xtNguoiNhan').value = ''; boDauViec();
+    xtDong = []; veBangXuat(); document.getElementById('xtNguoiNhan').value = ''; boDauViec(); document.getElementById('xtPhanKhu').value = ''; document.getElementById('dvKQ').innerHTML = '';
   }).catch(function (e) { tai(false); bao('Lỗi: ' + e.message); });
 }
 
