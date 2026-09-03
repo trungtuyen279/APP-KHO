@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.3.0 (GitHub Pages) · 03/09/2026
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.4.0 (GitHub Pages) · 03/09/2026
+  v1.4.0: trang đầu "Tổng quan" — biểu đồ tròn tình trạng vật tư THUÊ theo từng bên cho thuê của công trình
+          (đã trả / chưa trả), chạm biểu đồ → bảng chi tiết từng loại vật tư (nhận / trả / còn lại). Chọn công trình
+          ở đầu trang. Số = HANG_THUE_DAU_KY (kế toán nhập tồn đầu kỳ) + phiếu nhận/trả thuê đã duyệt. Đi cùng Code v0.11.
   v1.3.0: Xuất kho thêm "CBKT phụ trách" (NHAN_SU app báo cáo) và "Phân khu" (cột phan_khu danh mục) — chọn phân khu lọc đầu việc,
           chọn đầu việc tự điền phân khu; ghi cbkt_email/cbkt_ten vào PHIEU_XUAT. Đi cùng Code v0.10.
   v1.2.1: tab Duyệt thêm nút "↻ Danh mục" (làm nóng cache máy chủ sau khi sửa VAT_TU / danh mục app báo cáo). Đi cùng Code v0.9.1.
@@ -82,6 +85,23 @@
   #moAnh>div{background:none;max-height:100vh;height:100vh;width:100vw;border-radius:0;padding:0;overflow:auto;-webkit-overflow-scrolling:touch}
   #moAnh img{display:block;width:100%;transition:width .15s} #moAnh img.to{width:220%}
   #moAnh .dongAnh{position:fixed;top:12px;right:12px;background:#fff;border:0;border-radius:20px;padding:8px 14px;font-weight:700;z-index:2}
+  /* v1.4: tổng quan hàng thuê */
+  .tq-luoi{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .tq-o{background:#fff;border:1px solid var(--vien);border-radius:10px;padding:10px 8px;text-align:center;cursor:pointer}
+  .tq-o:active{background:#fff5f5}
+  .tq-o svg{width:118px;height:118px;display:block;margin:0 auto}
+  .tq-o .ten{font-weight:700;font-size:13.5px;margin-top:6px;line-height:1.25;min-height:34px;display:flex;align-items:center;justify-content:center}
+  .tq-o .so{font-size:12px;color:#555;margin-top:3px}
+  .tq-o .so b{color:var(--do)}
+  .tq-chu-thich{display:flex;gap:14px;justify-content:center;font-size:12px;color:#555;margin:2px 0 8px}
+  .tq-chu-thich i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+  .tq-tong{display:flex;gap:6px;text-align:center}
+  .tq-tong div{flex:1;background:#f6f7f9;border-radius:8px;padding:7px 4px}
+  .tq-tong small{display:block;font-size:11px;color:#666}
+  .tq-tong b{font-size:16px}
+  #htBang td.am{background:#ffebee;color:var(--do);font-weight:700}
+  #htBang td.con{color:var(--do);font-weight:700}
+  #htBang td.so{text-align:right;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -105,6 +125,27 @@
     <div class="chan">App Kho công trường LICOGI13FC · bản <span id="lgVer"></span> · <a href="huong-dan-cai-dat.html">Hướng dẫn cài app</a></div>
   </div>
 </div>
+
+<!-- ======================= TỔNG QUAN HÀNG THUÊ (v1.4) ======================= -->
+<div class="man" id="manTongQuan">
+  <div class="the">
+    <label>Công trình</label><select id="tqDuAn" onchange="taiHangThue()"></select>
+    <div class="tq-tong" id="tqTong"></div>
+    <div class="nho-mo" id="tqLuc" style="margin-top:6px"></div>
+  </div>
+  <div class="tq-chu-thich"><span><i style="background:#0B4F9C"></i>Đã trả</span><span><i style="background:#E67E22"></i>Chưa trả (còn giữ)</span></div>
+  <div class="nho-mo" style="text-align:center;margin:-4px 0 8px">Chạm biểu đồ để xem chi tiết từng loại vật tư</div>
+  <div class="tq-luoi" id="tqLuoi"></div>
+  <div class="the" id="tqTrong" style="display:none"></div>
+</div>
+
+<!-- Chi tiết hàng thuê 1 bên cho thuê (v1.4) -->
+<div class="mo" id="moHangThue"><div>
+  <h3 id="htTieuDe" style="margin:0 0 4px"></h3>
+  <div class="nho-mo" id="htTomTat" style="margin-bottom:8px"></div>
+  <div style="overflow-x:auto"><table id="htBang"><thead><tr><th>Loại vật tư</th><th>ĐVT</th><th style="text-align:right">Tổng nhận</th><th style="text-align:right">Tổng trả</th><th style="text-align:right">Còn lại</th></tr></thead><tbody></tbody></table></div>
+  <button class="nut phu" onclick="dong('moHangThue')">Đóng</button>
+</div></div>
 
 <!-- ======================= CHỤP PHIẾU (OCR) ======================= -->
 <div class="man" id="manChup">
@@ -225,6 +266,7 @@
 
 <!-- Thanh tab -->
 <div class="tab" id="thanhTab" style="display:none">
+  <button id="tabTongQuan" onclick="moTab('TongQuan')"><span>🏗️</span>Tổng quan</button>
   <button id="tabChup" onclick="moTab('Chup')"><span>📷</span>Chụp phiếu</button>
   <button id="tabXuat" onclick="moTab('Xuat')"><span>🧾</span>Xuất kho</button>
   <button id="tabTon" onclick="moTab('Ton')"><span>📊</span>Tồn kho</button>
@@ -282,7 +324,7 @@ function tai(b, chu) {                                   // v1.2: hiện số gi
 }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 function moTab(t) {
-  ['Chup', 'Xuat', 'Ton', 'Duyet', 'Login', 'KiemTra'].forEach(function (x) {
+  ['TongQuan', 'Chup', 'Xuat', 'Ton', 'Duyet', 'Login', 'KiemTra'].forEach(function (x) {
     var m = document.getElementById('man' + x); if (m) m.classList.remove('hien');
     var b = document.getElementById('tab' + x); if (b) b.classList.remove('chon');
   });
@@ -290,6 +332,7 @@ function moTab(t) {
   var b = document.getElementById('tab' + t); if (b) b.classList.add('chon');
   if (t === 'Ton') taiTon();
   if (t === 'Duyet') taiChoDuyet();
+  if (t === 'TongQuan') taiHangThue();
 }
 function dong(id) { document.getElementById(id).classList.remove('hien'); }
 function bao(msg) { alert(msg); }
@@ -352,12 +395,16 @@ function batDau(kq) {
     kq.doi_tac.forEach(function (d) { if (d.loai === 'TO_DOI' || d.loai === 'THAU_PHU') ben.push({ ma: d.ma_dt, ten: d.ten_dt, loai: d.loai }); });
     document.getElementById('xtBenNhan').innerHTML = '<option value="">— chọn —</option>' + ben.map(function (b) { return '<option value="' + esc(b.ma) + '">' + esc(b.ten || b.ma) + ' (' + (b.loai === 'TO_DOI' ? 'tổ đội' : 'thầu phụ') + ')</option>'; }).join('');
     maDaXuat = kq.user.ma_da;
+    var selDa = document.getElementById('tqDuAn'), daCu = selDa.value;                         // v1.4: công trình cho trang Tổng quan
+    var dsDa = (kq.du_an && kq.du_an.length) ? kq.du_an : [{ ma_da: kq.user.ma_da, ten_da: kq.user.ma_da }];
+    selDa.innerHTML = dsDa.map(function (d) { return '<option value="' + esc(d.ma_da) + '">' + esc(d.ten_da || d.ma_da) + '</option>'; }).join('');
+    if (daCu && dsDa.some(function (d) { return d.ma_da === daCu; })) selDa.value = daCu;
     if (!DV_CHON) capNhatDauViec(kq);                                 // tải ngầm không xóa đầu việc đang chọn
     document.getElementById('tabDuyet').style.display = ['KE_TOAN_KHO', 'CHT', 'PCH', 'ADMIN'].indexOf(kq.user.vai_tro) >= 0 ? '' : 'none';
     document.getElementById('thanhTab').style.display = 'flex';
     document.getElementById('btnThoat').style.display = '';
     var manHienTai = document.querySelector('.man.hien');
-    if (!manHienTai || manHienTai.id === 'manLogin') moTab('Chup');   // đang ở tab khác (tải ngầm) thì giữ nguyên
+    if (!manHienTai || manHienTai.id === 'manLogin') moTab('TongQuan');   // v1.4: mở app vào Tổng quan; đang ở tab khác (tải ngầm) thì giữ nguyên
 }
 
 /* ================= chụp + nén ảnh ================= */
@@ -603,6 +650,54 @@ function guiXuatTay() {
     bao('Đã ghi phiếu ' + kq.so_phieu + ' — chờ kế toán duyệt');
     xtDong = []; veBangXuat(); document.getElementById('xtNguoiNhan').value = ''; boDauViec(); document.getElementById('xtPhanKhu').value = ''; document.getElementById('dvKQ').innerHTML = '';
   }).catch(function (e) { tai(false); bao('Lỗi: ' + e.message); });
+}
+
+/* ================= tổng quan hàng thuê (v1.4) ================= */
+var HT_CACHE = {};                                       // ma_da → kết quả hangThue (mở tab hiện ngay, tải mới ngầm)
+function soVn(x) { return (Math.round((Number(x) || 0) * 1000) / 1000).toLocaleString('vi-VN'); }
+function taiHangThue() {
+  var da = document.getElementById('tqDuAn').value; if (!da) return;
+  var cu = HT_CACHE[da];
+  if (cu) { veHangThue(cu, true); } else tai(true, 'Đang tổng hợp hàng thuê từ phiếu đã duyệt…');
+  api('hangThue', { ma_da: da }, 90).then(function (kq) {
+    tai(false); HT_CACHE[da] = kq;
+    if (document.getElementById('tqDuAn').value !== da) return;
+    veHangThue(kq, false);
+  }).catch(function (e) { tai(false); if (!cu) bao(e.message); });
+}
+function veDonut(pctTra) {                               // SVG vòng tròn: xanh = đã trả, cam = chưa trả; giữa = % chưa trả
+  var r = 40, C = 2 * Math.PI * r, tra = Math.max(0, Math.min(100, pctTra || 0)), chua = 100 - tra;
+  return '<svg viewBox="0 0 118 118"><circle cx="59" cy="59" r="' + r + '" fill="none" stroke="#0B4F9C" stroke-width="22"/>' +
+    '<circle cx="59" cy="59" r="' + r + '" fill="none" stroke="#E67E22" stroke-width="22" stroke-dasharray="' + (C * chua / 100).toFixed(2) + ' ' + C.toFixed(2) + '" transform="rotate(-90 59 59)"/>' +
+    '<text x="59" y="56" text-anchor="middle" font-size="19" font-weight="700" fill="#1c2430">' + chua + '%</text>' +
+    '<text x="59" y="72" text-anchor="middle" font-size="10" fill="#555">chưa trả</text></svg>';
+}
+function veHangThue(kq, dangLamMoi) {
+  var t = kq.tong || { nhan: 0, tra: 0, con: 0, pct_tra: 0 };
+  document.getElementById('tqTong').innerHTML = '<div><small>Tổng nhận</small><b>' + soVn(t.nhan) + '</b></div><div><small>Tổng trả</small><b>' + soVn(t.tra) + '</b></div>' +
+    '<div><small>Còn giữ</small><b style="color:var(--do)">' + soVn(t.con) + '</b></div><div><small>Đã trả</small><b>' + (t.pct_tra || 0) + '%</b></div>';
+  document.getElementById('tqLuc').textContent = 'Tính lúc ' + kq.luc + ' · ' + (kq.ncc || []).length + ' bên cho thuê · ' + (kq.so_dau_ky || 0) + ' dòng đầu kỳ + ' + (kq.so_phieu || 0) + ' phiếu đã duyệt' + (dangLamMoi ? ' · đang làm mới…' : '');
+  var trong = document.getElementById('tqTrong');
+  if (!(kq.ncc || []).length) {
+    trong.style.display = ''; trong.innerHTML = '<b>Chưa có số liệu hàng thuê cho công trình này.</b><div class="nho-mo" style="margin-top:6px">Kế toán kho nhập số đã nhận / đã trả trước khi dùng app vào sheet <b>HANG_THUE_DAU_KY</b> (chạy <code>testHangThueDauKy</code> để kiểm tra mã), hoặc chờ phiếu <b>Nhận / Trả hàng thuê</b> được duyệt.</div>';
+    document.getElementById('tqLuoi').innerHTML = ''; return;
+  }
+  trong.style.display = 'none';
+  document.getElementById('tqLuoi').innerHTML = kq.ncc.map(function (n, i) {
+    return '<div class="tq-o" onclick="moChiTietHangThue(' + i + ')">' + veDonut(n.pct_tra) + '<div class="ten">' + esc(n.ten_dt) + '</div>' +
+      '<div class="so">Còn giữ <b>' + soVn(n.con) + '</b> / nhận ' + soVn(n.nhan) + '<br>' + n.so_ma + ' loại vật tư</div></div>';
+  }).join('');
+}
+function moChiTietHangThue(i) {
+  var kq = HT_CACHE[document.getElementById('tqDuAn').value]; if (!kq || !kq.ncc[i]) return;
+  var n = kq.ncc[i];
+  document.getElementById('htTieuDe').textContent = n.ten_dt;
+  document.getElementById('htTomTat').textContent = n.ma_dt + ' · nhận ' + soVn(n.nhan) + ' · trả ' + soVn(n.tra) + ' · còn giữ ' + soVn(n.con) + ' (' + n.pct_tra + '% đã trả) · ' + n.so_ma + ' loại vật tư';
+  document.querySelector('#htBang tbody').innerHTML = n.vat_tu.map(function (v) {
+    var lop = v.con < 0 ? 'am' : (v.con > 0 ? 'con' : '');
+    return '<tr><td>' + esc(v.ten_vt) + '<br><span class="nho-mo">' + esc(v.ma_vt) + '</span></td><td>' + esc(v.don_vi) + '</td><td class="so">' + soVn(v.nhan) + '</td><td class="so">' + soVn(v.tra) + '</td><td class="so ' + lop + '">' + soVn(v.con) + (v.con < 0 ? '<br><span class="nho-mo">trả > nhận, rà lại</span>' : '') + '</td></tr>';
+  }).join('') + '<tr style="background:#eef1f5;font-weight:700"><td>Tổng</td><td></td><td class="so">' + soVn(n.nhan) + '</td><td class="so">' + soVn(n.tra) + '</td><td class="so con">' + soVn(n.con) + '</td></tr>';
+  document.getElementById('moHangThue').classList.add('hien');
 }
 
 /* ================= tồn kho ================= */
