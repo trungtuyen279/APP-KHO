@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.4.0 (GitHub Pages) · 03/09/2026
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.4.1 (GitHub Pages) · 03/09/2026
+  v1.4.1: % đã trả tính THEO TỪNG LOẠI vật tư (bảng chi tiết có cột % trả + thanh), biểu đồ NCC = trung bình % các loại,
+          ô tổng công trình = trung bình % mọi loại. Đi cùng Code v0.11.1.
   v1.4.0: trang đầu "Tổng quan" — biểu đồ tròn tình trạng vật tư THUÊ theo từng bên cho thuê của công trình
           (đã trả / chưa trả), chạm biểu đồ → bảng chi tiết từng loại vật tư (nhận / trả / còn lại). Chọn công trình
           ở đầu trang. Số = HANG_THUE_DAU_KY (kế toán nhập tồn đầu kỳ) + phiếu nhận/trả thuê đã duyệt. Đi cùng Code v0.11.
@@ -102,6 +104,8 @@
   #htBang td.am{background:#ffebee;color:var(--do);font-weight:700}
   #htBang td.con{color:var(--do);font-weight:700}
   #htBang td.so{text-align:right;white-space:nowrap}
+  .pct-thanh{display:block;height:5px;border-radius:3px;background:#E67E22;margin-top:3px;overflow:hidden}
+  .pct-thanh i{display:block;height:100%;background:#0B4F9C}
 </style>
 </head>
 <body>
@@ -143,7 +147,7 @@
 <div class="mo" id="moHangThue"><div>
   <h3 id="htTieuDe" style="margin:0 0 4px"></h3>
   <div class="nho-mo" id="htTomTat" style="margin-bottom:8px"></div>
-  <div style="overflow-x:auto"><table id="htBang"><thead><tr><th>Loại vật tư</th><th>ĐVT</th><th style="text-align:right">Tổng nhận</th><th style="text-align:right">Tổng trả</th><th style="text-align:right">Còn lại</th></tr></thead><tbody></tbody></table></div>
+  <div style="overflow-x:auto"><table id="htBang"><thead><tr><th>Loại vật tư</th><th>ĐVT</th><th style="text-align:right">Tổng nhận</th><th style="text-align:right">Tổng trả</th><th style="text-align:right">Còn lại</th><th style="text-align:right">% trả</th></tr></thead><tbody></tbody></table></div>
   <button class="nut phu" onclick="dong('moHangThue')">Đóng</button>
 </div></div>
 
@@ -675,8 +679,8 @@ function veDonut(pctTra) {                               // SVG vòng tròn: xan
 function veHangThue(kq, dangLamMoi) {
   var t = kq.tong || { nhan: 0, tra: 0, con: 0, pct_tra: 0 };
   document.getElementById('tqTong').innerHTML = '<div><small>Tổng nhận</small><b>' + soVn(t.nhan) + '</b></div><div><small>Tổng trả</small><b>' + soVn(t.tra) + '</b></div>' +
-    '<div><small>Còn giữ</small><b style="color:var(--do)">' + soVn(t.con) + '</b></div><div><small>Đã trả</small><b>' + (t.pct_tra || 0) + '%</b></div>';
-  document.getElementById('tqLuc').textContent = 'Tính lúc ' + kq.luc + ' · ' + (kq.ncc || []).length + ' bên cho thuê · ' + (kq.so_dau_ky || 0) + ' dòng đầu kỳ + ' + (kq.so_phieu || 0) + ' phiếu đã duyệt' + (dangLamMoi ? ' · đang làm mới…' : '');
+    '<div><small>Còn giữ</small><b style="color:var(--do)">' + soVn(t.con) + '</b></div><div><small>Đã trả (TB các loại)</small><b>' + (t.pct_tra || 0) + '%</b></div>';
+  document.getElementById('tqLuc').textContent = 'Tính lúc ' + kq.luc + ' · ' + (kq.ncc || []).length + ' bên cho thuê · ' + (t.so_loai || 0) + ' loại vật tư · ' + (kq.so_dau_ky || 0) + ' dòng đầu kỳ + ' + (kq.so_phieu || 0) + ' phiếu đã duyệt · % = trung bình % trả của từng loại' + (dangLamMoi ? ' · đang làm mới…' : '');
   var trong = document.getElementById('tqTrong');
   if (!(kq.ncc || []).length) {
     trong.style.display = ''; trong.innerHTML = '<b>Chưa có số liệu hàng thuê cho công trình này.</b><div class="nho-mo" style="margin-top:6px">Kế toán kho nhập số đã nhận / đã trả trước khi dùng app vào sheet <b>HANG_THUE_DAU_KY</b> (chạy <code>testHangThueDauKy</code> để kiểm tra mã), hoặc chờ phiếu <b>Nhận / Trả hàng thuê</b> được duyệt.</div>';
@@ -692,11 +696,13 @@ function moChiTietHangThue(i) {
   var kq = HT_CACHE[document.getElementById('tqDuAn').value]; if (!kq || !kq.ncc[i]) return;
   var n = kq.ncc[i];
   document.getElementById('htTieuDe').textContent = n.ten_dt;
-  document.getElementById('htTomTat').textContent = n.ma_dt + ' · nhận ' + soVn(n.nhan) + ' · trả ' + soVn(n.tra) + ' · còn giữ ' + soVn(n.con) + ' (' + n.pct_tra + '% đã trả) · ' + n.so_ma + ' loại vật tư';
+  document.getElementById('htTomTat').textContent = n.ma_dt + ' · nhận ' + soVn(n.nhan) + ' · trả ' + soVn(n.tra) + ' · còn giữ ' + soVn(n.con) + ' · ' + n.so_ma + ' loại vật tư · đã trả trung bình ' + n.pct_tra + '%';
   document.querySelector('#htBang tbody').innerHTML = n.vat_tu.map(function (v) {
     var lop = v.con < 0 ? 'am' : (v.con > 0 ? 'con' : '');
-    return '<tr><td>' + esc(v.ten_vt) + '<br><span class="nho-mo">' + esc(v.ma_vt) + '</span></td><td>' + esc(v.don_vi) + '</td><td class="so">' + soVn(v.nhan) + '</td><td class="so">' + soVn(v.tra) + '</td><td class="so ' + lop + '">' + soVn(v.con) + (v.con < 0 ? '<br><span class="nho-mo">trả > nhận, rà lại</span>' : '') + '</td></tr>';
-  }).join('') + '<tr style="background:#eef1f5;font-weight:700"><td>Tổng</td><td></td><td class="so">' + soVn(n.nhan) + '</td><td class="so">' + soVn(n.tra) + '</td><td class="so con">' + soVn(n.con) + '</td></tr>';
+    var p = v.pct_tra == null ? (v.nhan > 0 ? Math.round(v.tra / v.nhan * 100) : 0) : v.pct_tra;
+    return '<tr><td>' + esc(v.ten_vt) + '<br><span class="nho-mo">' + esc(v.ma_vt) + '</span></td><td>' + esc(v.don_vi) + '</td><td class="so">' + soVn(v.nhan) + '</td><td class="so">' + soVn(v.tra) + '</td><td class="so ' + lop + '">' + soVn(v.con) + (v.con < 0 ? '<br><span class="nho-mo">trả > nhận, rà lại</span>' : '') + '</td>' +
+      '<td class="so"><b>' + p + '%</b><span class="pct-thanh"><i style="width:' + Math.max(0, Math.min(100, p)) + '%"></i></span></td></tr>';
+  }).join('') + '<tr style="background:#eef1f5;font-weight:700"><td>Tổng</td><td></td><td class="so">' + soVn(n.nhan) + '</td><td class="so">' + soVn(n.tra) + '</td><td class="so con">' + soVn(n.con) + '</td><td class="so">TB ' + n.pct_tra + '%</td></tr>';
   document.getElementById('moHangThue').classList.add('hien');
 }
 
