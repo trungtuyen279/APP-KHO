@@ -1,7 +1,7 @@
 /* Service worker app KHO — mở được app khi không có mạng (chỉ giao diện; dữ liệu vẫn cần mạng).
    Đổi CACHE mỗi lần phát hành bản mới để điện thoại tự nạp bản mới. */
-const CACHE = 'l13fc-kho-v1.5.1';
-const FILES = ['./', './index.html', './config.js', './huong-dan-cai-dat.html', './manifest.webmanifest',
+const CACHE = 'l13fc-kho-v1.6.0';
+const FILES = ['./', './index.html', './config.js', './xlsx-lite.js', './icons/header-cty.jpg', './huong-dan-cai-dat.html', './manifest.webmanifest',
   './icons/logo.png', './icons/logo-login.png', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {
