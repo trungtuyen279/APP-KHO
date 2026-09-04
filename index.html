@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.6.2 (GitHub Pages) · 04/09/2026
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.6.3 (GitHub Pages) · 04/09/2026
+  v1.6.3: chọn công trình ngay trên màn Đề nghị vật tư (ô chọn đồng bộ với Tổng quan); ô Kho nhận khi lập phiếu chỉ liệt kê kho
+          của công trình đang chọn — công trình chưa khai kho thì báo rõ. Đi cùng Code v0.12.1 (ADMIN thấy mọi dự án app báo cáo).
   v1.6.2: bản in BM 16.04 — khổ A4 dọc, lề trái 20 mm · phải 10 mm · trên 15 mm · dưới 15 mm (@page); ảnh header cắt bỏ viền trắng
           (icons/header-cty.jpg 1374×261) và đặt width 100 % không object-fit → mép trái logo thẳng với mép trái bảng.
   v1.6.1: bản in BM 16.04 chỉnh theo góp ý 04/09 chiều: 1 bảng liền (DỰ ÁN → ô ký) cột thẳng hàng A–J; "Khối lượng" căn giữa; PHÒNG MUA/ĐỘI MUA
@@ -184,7 +186,7 @@
 <div class="man" id="manTongQuan">
   <!-- 1. Chọn công trình (v1.5.1: tách riêng khối) -->
   <div class="the">
-    <label>Công trình</label><select id="tqDuAn" onchange="taiHangThue()"></select>
+    <label>Công trình</label><select id="tqDuAn" onchange="doiDuAn(this.value)"></select>
   </div>
   <!-- 2. Tình trạng phiếu đề nghị vật tư (v1.5.1: đưa lên ngay dưới công trình) -->
   <button class="nut-tq" style="margin:0 0 10px" onclick="moDeNghi()"><span class="ic">📋</span><span><b>Phiếu đề nghị vật tư gửi công ty</b><small id="tqDnChu">Đang tải…</small></span><span class="dem" id="tqDnDem" style="display:none"></span></button>
@@ -212,7 +214,7 @@
 <div class="man" id="manDeNghi">
   <div class="the" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
     <button class="nut phu nho" style="margin:0" onclick="moTab('TongQuan')">← Tổng quan</button>
-    <b style="flex:1;font-size:13px;line-height:1.2">Đề nghị vật tư<br><span class="nho-mo" id="dnDuAn"></span></b>
+    <div style="flex:1;min-width:150px"><label style="font-size:12px">Công trình</label><select id="dnDuAn" onchange="doiDuAn(this.value)" style="margin:0;padding:7px"></select></div>
     <button class="nut ok nho" style="margin:0;display:none" id="dnNutLap" onclick="moLapDeNghi(null)">＋ Lập phiếu</button>
     <button class="nut phu nho" style="margin:0;display:none" id="dnNutNhap" onclick="document.getElementById('fileDnExcel').click()" title="Đọc phiếu đề nghị lập ngoài app (Excel theo mẫu BM 16.04)">📥 Nhập từ Excel</button>
     <input id="fileDnExcel" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none" onchange="nhapDeNghiExcel(event)">
@@ -530,8 +532,10 @@ function batDau(kq) {
     maDaXuat = kq.user.ma_da;
     var selDa = document.getElementById('tqDuAn'), daCu = selDa.value;                         // v1.4: công trình cho trang Tổng quan
     var dsDa = (kq.du_an && kq.du_an.length) ? kq.du_an : [{ ma_da: kq.user.ma_da, ten_da: kq.user.ma_da }];
-    selDa.innerHTML = dsDa.map(function (d) { return '<option value="' + esc(d.ma_da) + '">' + esc(d.ten_da || d.ma_da) + '</option>'; }).join('');
+    var optDa = dsDa.map(function (d) { return '<option value="' + esc(d.ma_da) + '">' + esc(d.ten_da || d.ma_da) + (d.co_kho === false ? ' (chưa khai kho)' : '') + '</option>'; }).join('');
+    selDa.innerHTML = optDa; document.getElementById('dnDuAn').innerHTML = optDa;              // v1.6.3: cùng danh sách ở màn Đề nghị
     if (daCu && dsDa.some(function (d) { return d.ma_da === daCu; })) selDa.value = daCu;
+    document.getElementById('dnDuAn').value = selDa.value;
     if (!DV_CHON) capNhatDauViec(kq);                                 // tải ngầm không xóa đầu việc đang chọn
     document.getElementById('tabDuyet').style.display = ['KE_TOAN_KHO', 'CHT', 'PCH', 'ADMIN'].indexOf(kq.user.vai_tro) >= 0 ? '' : 'none';
     document.getElementById('thanhTab').style.display = 'flex';
@@ -850,10 +854,16 @@ function nhomTt(tt) { return tt === 'HUY' ? 'TT9' : tt === 'HOAN_THANH' ? 'TT5' 
 function ngayVn(iso) { if (!iso) return ''; var m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? m[3] + '/' + m[2] + '/' + m[1] : String(iso); }
 function ngayIso(vn) { var m = String(vn || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m ? m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2) : ''; }
 function maDaTq() { return document.getElementById('tqDuAn').value || (DL && DL.user.ma_da) || ''; }
+function doiDuAn(ma) {                                   // v1.6.3: 2 ô chọn công trình (Tổng quan + Đề nghị) luôn cùng giá trị
+  document.getElementById('tqDuAn').value = ma; document.getElementById('dnDuAn').value = ma;
+  if (document.getElementById('manDeNghi').classList.contains('hien')) taiDeNghi(false);
+  else { taiHangThue(); taiDeNghi(true); }
+}
+function khoCuaDuAn(ma) { return (DL.user.khos || []).filter(function (k) { return !k.ma_da || k.ma_da === ma; }); }
 function moDeNghi() { moTab('DeNghi'); }
 function taiDeNghi(chiDem) {                            // chiDem: chỉ cập nhật nút trên Tổng quan
   var da = maDaTq(); if (!da) return;
-  document.getElementById('dnDuAn').textContent = da;
+  document.getElementById('dnDuAn').value = da;
   var cu = PDN_CACHE[da];
   if (cu) veDeNghi(cu, chiDem); else if (!chiDem) tai(true, 'Đang tải phiếu đề nghị…');
   api('deNghiDs', { ma_da: da }, 60).then(function (kq) { tai(false); PDN_CACHE[da] = kq; if (maDaTq() === da) veDeNghi(kq, chiDem); })
@@ -949,6 +959,9 @@ function guiBuocDeNghi() {
 }
 /* lập / sửa */
 function moLapDeNghi(ct) {
+  var khoDa = khoCuaDuAn(ct ? (ct.header.ma_da || maDaTq()) : maDaTq());               // v1.6.3: kho nhận theo công trình đang chọn
+  if (!khoDa.length) return bao('Công trình ' + maDaTq() + ' chưa khai kho/bãi nào trong sheet KHO (hoặc anh chưa được cấp kho của công trình này). Kế toán kho khai KHO rồi bấm "↻ Danh mục" trong tab Duyệt.');
+  document.getElementById('ldKho').innerHTML = khoDa.map(function (k) { return '<option value="' + esc(k.ma_kho) + '">' + esc(k.ten_kho || k.ma_kho) + '</option>'; }).join('');
   LD = { so_pdn: ct ? ct.so_pdn : '', dong: ct ? ct.dong.map(function (d) { return { ma_vt: d.ma_vt, ten_vt: d.ten_vt, don_vi: d.don_vi, tieu_chuan: d.tieu_chuan, spec: d.spec, luy_ke_da_nhap: d.luy_ke_da_nhap || '', ton_kho: d.ton_kho || '', so_luong_de_xuat: d.so_luong_de_xuat || '', so_luong_dat: d.so_luong_dat || '' }; }) : [] };
   document.getElementById('ldTieuDe').textContent = ct ? 'Sửa phiếu ' + ct.so_pdn : 'Lập phiếu đề nghị vật tư';
   if (ct) { document.getElementById('ldKho').value = ct.header.ma_kho_nhan; document.getElementById('ldHangMuc').value = ct.header.hang_muc; document.getElementById('ldNgayVe').value = ngayIso(ct.header.ngay_can_ve); document.getElementById('ldPhongMua').value = ct.header.phong_mua || 'PHONG_MUA'; document.getElementById('ldSoCty').value = ct.header.so_phieu_cty; document.getElementById('ldGhiChu').value = ct.header.ghi_chu; }
@@ -1073,6 +1086,9 @@ function nhapDeNghiExcel(ev) {
       var v = khopMaVatTu(d.ten_vt, d.don_vi); if (v) khop++;
       return { ma_vt: v ? v[0] : '', ten_vt: v ? v[1] : d.ten_vt, ten_excel: d.ten_vt, don_vi: v ? v[2] : d.don_vi, tieu_chuan: d.tieu_chuan || (v ? v[3] || '' : ''), spec: d.spec, luy_ke_da_nhap: d.luy_ke_da_nhap || '', ton_kho: d.ton_kho || '', so_luong_de_xuat: d.so_luong_de_xuat || '', so_luong_dat: d.so_luong_dat || '' };
     }) };
+    var khoDa = khoCuaDuAn(maDaTq());                                                   // v1.6.3
+    if (!khoDa.length) return bao('Công trình ' + maDaTq() + ' chưa khai kho/bãi nào trong sheet KHO — khai KHO trước rồi nhập lại.');
+    document.getElementById('ldKho').innerHTML = khoDa.map(function (k) { return '<option value="' + esc(k.ma_kho) + '">' + esc(k.ten_kho || k.ma_kho) + '</option>'; }).join('');
     document.getElementById('ldTieuDe').textContent = 'Nhập phiếu từ Excel: ' + f.name;
     document.getElementById('ldHangMuc').value = p.hang_muc || ''; document.getElementById('ldNgayVe').value = ngayIso(p.ngay_can_ve); document.getElementById('ldPhongMua').value = p.phong_mua || 'PHONG_MUA';
     document.getElementById('ldSoCty').value = p.so || ''; document.getElementById('ldGhiChu').value = p.ghi_chu || '';
