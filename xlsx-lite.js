@@ -1,5 +1,5 @@
 /* =====================================================================
-   xlsx-lite.js — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.0 · 04/09/2026
+   xlsx-lite.js — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.0.1 · 04/09/2026 (tên người ký dồn đáy ô)
    Ghi / đọc file Excel (.xlsx) cho PHIẾU ĐỀ NGHỊ VẬT TƯ (mẫu BM 16.04) mà KHÔNG cần thư viện ngoài
    (CDN bị chặn ở nhiều mạng công trường; app phải chạy được offline).
    - xlsxDeNghi(phieu, anhHeader)  → Blob .xlsx đúng bố cục mẫu công ty (header ảnh, bảng 10 cột, 3 ô ký) — mở bằng Excel sửa được.
@@ -109,7 +109,7 @@
     '<xf numFmtId="0" fontId="4" fillId="0" borderId="3" xfId="0" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>' +
     '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>' +
     '<xf numFmtId="0" fontId="1" fillId="0" borderId="4" xfId="0" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>' +
-    '<xf numFmtId="0" fontId="1" fillId="0" borderId="3" xfId="0" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>' +
+    '<xf numFmtId="0" fontId="1" fillId="0" borderId="3" xfId="0" applyAlignment="1"><alignment horizontal="center" vertical="bottom" wrapText="1"/></xf>' +
     '</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
 
   /* ---------- GHI PHIẾU ĐỀ NGHỊ ----------

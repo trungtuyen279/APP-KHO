@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.6.0 (GitHub Pages) · 04/09/2026
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.6.1 (GitHub Pages) · 04/09/2026
+  v1.6.1: bản in BM 16.04 chỉnh theo góp ý 04/09 chiều: 1 bảng liền (DỰ ÁN → ô ký) cột thẳng hàng A–J; "Khối lượng" căn giữa; PHÒNG MUA/ĐỘI MUA
+          = 2 cột STT+Tên VT, ô tick x = cột Tiêu chuẩn, ghi chú từ cột Đơn vị tính tới hết; NGƯỜI ĐỀ NGHỊ = tên CHT (người đã duyệt bước CHT,
+          không có thì CHT_DUYET của dự án trong NHAN_SU app báo cáo), chữ dồn xuống đáy ô. Excel xuất theo cùng quy ước.
   v1.6.0: phiếu đề nghị — (1) bản in BM 16.04 theo đúng mẫu công ty: header ảnh LICOGI13FC (icons/header-cty.jpg), 2 dòng Phòng mua / Đội mua
           có ô tick + ghi chú riêng, 3 ô ký chia như mẫu Excel, tên NGƯỜI ĐỀ NGHỊ = tên công trình, bỏ dòng "Số app kho · in lúc";
           (2) nút "Xuất Excel" trong chi tiết phiếu → file .xlsx đúng mẫu để sửa/gửi (xlsx-lite.js, không cần CDN, chạy offline);
@@ -147,7 +150,8 @@
     #inPhieu table{border-collapse:collapse;width:100%} #inPhieu td,#inPhieu th{border:1px solid #000;padding:3px 5px;font-size:12px;vertical-align:middle}
     #inPhieu .kh img{display:block;width:100%;max-height:120px;object-fit:contain;margin:0 0 4px}
     #inPhieu h2{text-align:center;font-size:18px;margin:6px 0 2px} #inPhieu .so{text-align:center;font-weight:700;font-style:italic;margin-bottom:8px}
-    #inPhieu .ky td{text-align:center;font-weight:700} #inPhieu .ky .kt{height:80px;vertical-align:middle} #inPhieu .ky .ngay{font-weight:400;font-style:italic}
+    #inPhieu th{text-align:center;background:none} #inPhieu .c{text-align:center} #inPhieu .r{text-align:right} #inPhieu .b{font-weight:700}
+    #inPhieu .kt{height:80px;vertical-align:bottom;text-align:center;font-weight:700;padding-bottom:6px} #inPhieu .ngay{text-align:center;font-style:italic}
     #inPhieu .bm{text-align:right;font-style:italic;font-size:11px} }
 </style>
 </head>
@@ -990,20 +994,31 @@ function pdnGhiChu2(ghiChu) {                            // tách ghi chú thàn
   return [chuan(gc[0], 'Ghi chú: Hàng hoá cấp đầy đủ giấy tờ về chất lượng'), chuan(gc[1], 'Ghi chú: ')];
 }
 function pdnTenDuAn(maDa) { var t = (DL.du_an || []).filter(function (d) { return d.ma_da === maDa; })[0]; return t ? t.ten_da : maDa; }
-function inDeNghi() {
-  var k = DN_CT, h = k.header, tenDa = pdnTenDuAn(h.ma_da), gc = pdnGhiChu2(h.ghi_chu);
-  var hang = k.dong.map(function (d, i) { return '<tr><td style="text-align:center">' + (i + 1) + '</td><td>' + esc(d.ten_vt) + '</td><td style="text-align:center">' + esc(d.tieu_chuan) + '</td><td style="text-align:center">' + esc(d.spec) + '</td><td style="text-align:center">' + esc(d.don_vi) + '</td><td style="text-align:right">' + soVn(d.luy_ke_da_nhap) + '</td><td style="text-align:right">' + soVn(d.ton_kho) + '</td><td style="text-align:right">' + soVn(d.so_luong_de_xuat) + '</td><td style="text-align:right">' + soVn(d.so_luong_dat) + '</td><td>' + esc(d.ghi_chu) + '</td></tr>'; }).join('');
+function pdnTenCht(k) {                                  // v1.6.1: tên CHT ký NGƯỜI ĐỀ NGHỊ — 1) người đã duyệt bước CHT trong lịch sử; 2) CHT_DUYET của dự án (NHAN_SU app báo cáo)
+  var ten = '';
+  (k.lich_su || []).forEach(function (l) { if (/CHT_DUYET\s*$/.test(String(l.buoc || '')) && l.email) { var c = (DL.cbkt || []).filter(function (x) { return String(x.email).toLowerCase() === String(l.email).toLowerCase(); })[0]; ten = c ? c.ho_ten : ten; } });
+  if (!ten) { var cht = (DL.cbkt || []).filter(function (x) { return x.vai_tro === 'CHT_DUYET'; }); cht.sort(function (a, b) { return (b.pham_vi === 'Tất cả') - (a.pham_vi === 'Tất cả'); }); ten = cht.length ? cht[0].ho_ten : ''; }
+  if (!ten) { var o = document.querySelector('#xtCbkt option[value]:not([value=""])'); ten = o && /\(CHT/.test(o.textContent) ? (o.dataset.ten || '') : ''; }
+  return ten;
+}
+function inDeNghi() {                                    // v1.6.1: 1 bảng liền từ DỰ ÁN tới ô ký, cột thẳng hàng như mẫu Excel (A–J)
+  var k = DN_CT, h = k.header, tenDa = pdnTenDuAn(h.ma_da), gc = pdnGhiChu2(h.ghi_chu), tenCht = pdnTenCht(k), nd = String(h.ngay_de_nghi || '').split('/');
+  var hang = k.dong.map(function (d, i) { return '<tr><td class="c">' + (i + 1) + '</td><td>' + esc(d.ten_vt) + '</td><td class="c">' + esc(d.tieu_chuan) + '</td><td class="c">' + esc(d.spec) + '</td><td class="c">' + esc(d.don_vi) + '</td><td class="r">' + soVn(d.luy_ke_da_nhap) + '</td><td class="r">' + soVn(d.ton_kho) + '</td><td class="r">' + soVn(d.so_luong_de_xuat) + '</td><td class="r">' + soVn(d.so_luong_dat) + '</td><td>' + esc(d.ghi_chu) + '</td></tr>'; }).join('');
   for (var i = k.dong.length; i < 12; i++) hang += '<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
-  var nd = String(h.ngay_de_nghi || '').split('/');
+  var tick = function (la) { return '<td class="c b">' + (la ? 'x' : '') + '</td><td></td>'; };
   document.getElementById('inPhieu').innerHTML = '<div class="bm">BM 16.04</div><div class="kh"><img src="icons/header-cty.jpg" alt="CÔNG TY CỔ PHẦN LICOGI13FC"></div>' +
     '<h2>ĐỀ NGHỊ CẤP VẬT TƯ</h2><div class="so">Số: ' + esc(h.so_phieu_cty || k.so_pdn) + '</div>' +
-    '<table><tr><td style="width:9%;text-align:center"><b>DỰ ÁN</b></td><td style="width:51%"><b>' + esc(tenDa) + '</b></td><td style="width:22%"><b>NGÀY ĐỀ NGHỊ</b></td><td style="text-align:center"><b>' + esc(h.ngay_de_nghi) + '</b></td></tr><tr><td style="text-align:center"><b>H.MỤC</b></td><td><b>' + esc(h.hang_muc) + '</b></td><td><b>NGÀY VỀ CÔNG TRƯỜNG</b></td><td style="text-align:center"><b>' + esc(ngayVn(h.ngay_can_ve)) + '</b></td></tr></table>' +
-    '<table style="margin-top:6px"><thead><tr><th rowspan="2" style="width:4%">STT</th><th rowspan="2">Tên vật tư</th><th rowspan="2" style="width:11%">Tiêu chuẩn kỹ thuật</th><th rowspan="2" style="width:11%">Spec/Thương hiệu</th><th rowspan="2" style="width:6%">Đơn vị tính</th><th colspan="4">Khối lượng</th><th rowspan="2" style="width:11%">Ghi chú</th></tr><tr><th style="width:8%">Lũy kế đã nhập hàng</th><th style="width:7%">Tồn kho</th><th style="width:7%">Đề xuất</th><th style="width:8%">Đặt hàng</th></tr></thead><tbody>' + hang +
-    '<tr><td></td><td style="text-align:center"><b>Tổng cộng</b></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr></tbody></table>' +
-    '<table><tr><td style="width:22%;text-align:right">PHÒNG MUA</td><td style="width:8%;text-align:center">' + (h.phong_mua === 'DOI_MUA' ? '' : 'x') + '</td><td>' + esc(gc[0]) + '</td></tr><tr><td style="text-align:right">ĐỘI MUA</td><td style="text-align:center">' + (h.phong_mua === 'DOI_MUA' ? 'x' : '') + '</td><td>' + esc(gc[1]) + '</td></tr></table>' +
-    '<table class="ky"><tr><td style="width:30%">NGƯỜI ĐỀ NGHỊ</td><td style="width:34%">PHỤ TRÁCH KIỂM SOÁT</td><td>BAN TỔNG GIÁM ĐỐC</td></tr>' +
-    '<tr><td class="kt">' + esc(tenDa) + '</td><td class="kt"></td><td class="kt"></td></tr>' +
-    '<tr><td class="ngay">Ngày ' + esc(nd[0] || '……') + ' tháng ' + esc(nd[1] || '……') + ' năm ' + esc(nd[2] || '20……') + '</td><td class="ngay">Ngày …… tháng …… năm 20……</td><td class="ngay">Ngày …… tháng …… năm 20……</td></tr></table>' +
+    '<table><colgroup><col style="width:5%"><col style="width:28%"><col style="width:11%"><col style="width:11%"><col style="width:7%"><col style="width:8%"><col style="width:7%"><col style="width:7%"><col style="width:8%"><col style="width:8%"></colgroup>' +
+    '<tr><td class="c b">DỰ ÁN</td><td colspan="4" class="b">' + esc(tenDa) + '</td><td colspan="3" class="b">NGÀY ĐỀ NGHỊ</td><td colspan="2" class="c b">' + esc(h.ngay_de_nghi) + '</td></tr>' +
+    '<tr><td class="c b">H.MỤC</td><td colspan="4" class="b">' + esc(h.hang_muc) + '</td><td colspan="3" class="b">NGÀY VỀ CÔNG TRƯỜNG</td><td colspan="2" class="c b">' + esc(ngayVn(h.ngay_can_ve)) + '</td></tr>' +
+    '<tr><th rowspan="2">STT</th><th rowspan="2">Tên vật tư</th><th rowspan="2">Tiêu chuẩn kỹ thuật</th><th rowspan="2">Spec/Thương hiệu</th><th rowspan="2">Đơn vị tính</th><th colspan="4">Khối lượng</th><th rowspan="2">Ghi chú</th></tr>' +
+    '<tr><th>Lũy kế đã nhập hàng</th><th>Tồn kho</th><th>Đề xuất</th><th>Đặt hàng</th></tr>' + hang +
+    '<tr><td></td><td class="c b">Tổng cộng</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>' +
+    '<tr><td colspan="2" class="r">PHÒNG MUA</td>' + tick(h.phong_mua !== 'DOI_MUA') + '<td colspan="6">' + esc(gc[0]) + '</td></tr>' +
+    '<tr><td colspan="2" class="r">ĐỘI MUA</td>' + tick(h.phong_mua === 'DOI_MUA') + '<td colspan="6">' + esc(gc[1]) + '</td></tr>' +
+    '<tr><td colspan="2" class="c b">NGƯỜI ĐỀ NGHỊ</td><td colspan="4" class="c b">PHỤ TRÁCH KIỂM SOÁT</td><td colspan="4" class="c b">BAN TỔNG GIÁM ĐỐC</td></tr>' +
+    '<tr><td colspan="2" class="kt">' + esc(tenCht) + '</td><td colspan="4" class="kt"></td><td colspan="4" class="kt"></td></tr>' +
+    '<tr><td colspan="2" class="ngay">Ngày ' + esc(nd[0] || '……') + ' tháng ' + esc(nd[1] || '……') + ' năm ' + esc(nd[2] || '20……') + '</td><td colspan="4" class="ngay">Ngày …… tháng …… năm 20……</td><td colspan="4" class="ngay">Ngày …… tháng …… năm 20……</td></tr></table>' +
     '<p style="margin-top:10px"><b>Bộ phận thu mua xác nhận đơn đặt hàng :</b></p>';
   window.print();
 }
@@ -1023,7 +1038,7 @@ function xuatDeNghiExcel() {
   var k = DN_CT, h = k.header, tenDa = pdnTenDuAn(h.ma_da);
   tai(true, 'Đang tạo file Excel…');
   pdnHeaderJpg().then(function (anh) {
-    var u8 = XLSX_LITE.xlsxDeNghi({ so: h.so_phieu_cty || k.so_pdn, du_an: tenDa, hang_muc: h.hang_muc, ngay_de_nghi: h.ngay_de_nghi, ngay_can_ve: ngayVn(h.ngay_can_ve), phong_mua: h.phong_mua, ghi_chu: h.ghi_chu, nguoi_de_nghi: tenDa,
+    var u8 = XLSX_LITE.xlsxDeNghi({ so: h.so_phieu_cty || k.so_pdn, du_an: tenDa, hang_muc: h.hang_muc, ngay_de_nghi: h.ngay_de_nghi, ngay_can_ve: ngayVn(h.ngay_can_ve), phong_mua: h.phong_mua, ghi_chu: h.ghi_chu, nguoi_de_nghi: pdnTenCht(k),
       dong: k.dong.map(function (d) { return { ten_vt: d.ten_vt, tieu_chuan: d.tieu_chuan, spec: d.spec, don_vi: d.don_vi, luy_ke_da_nhap: d.luy_ke_da_nhap, ton_kho: d.ton_kho, so_luong_de_xuat: d.so_luong_de_xuat, so_luong_dat: d.so_luong_dat, ghi_chu: d.ghi_chu }; }) }, anh);
     tai(false);
     taiFile(u8, 'DNVT_' + String(h.so_phieu_cty || k.so_pdn).replace(/[\/\\:*?"<>|]/g, '-') + '.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
