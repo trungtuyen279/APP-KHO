@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.5.0 (GitHub Pages) · 03/09/2026
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.5.1 (GitHub Pages) · 04/09/2026
+  v1.5.1: sắp xếp lại trang Tổng quan theo yêu cầu 04/09: (1) khối chọn Công trình → (2) nút tình trạng Phiếu đề nghị vật tư
+          → (3) khối Vật tư thuê gồm 4 ô tổng + biểu đồ tròn từng bên cho thuê. Không đổi nghiệp vụ; đi cùng Code v0.12.
   v1.5.0: theo dõi PHIẾU ĐỀ NGHỊ VẬT TƯ gửi công ty (BM 16.04): nút trên Tổng quan → danh sách (lọc đang mở / thiếu hàng /
           hoàn thành), lập phiếu trong app (KT kho), dòng thời gian 11 bước, KT kho/CHT bấm chuyển bước (CHT duyệt, đã gửi P. Đấu thầu,
           BTGĐ duyệt, chọn NCC, NCC hẹn ngày, đang giao, báo thiếu…), % nhận tự tính từ phiếu nhập đã duyệt, đính ảnh bản ký,
@@ -166,17 +168,22 @@
 
 <!-- ======================= TỔNG QUAN HÀNG THUÊ (v1.4) ======================= -->
 <div class="man" id="manTongQuan">
+  <!-- 1. Chọn công trình (v1.5.1: tách riêng khối) -->
   <div class="the">
     <label>Công trình</label><select id="tqDuAn" onchange="taiHangThue()"></select>
+  </div>
+  <!-- 2. Tình trạng phiếu đề nghị vật tư (v1.5.1: đưa lên ngay dưới công trình) -->
+  <button class="nut-tq" style="margin:0 0 10px" onclick="moDeNghi()"><span class="ic">📋</span><span><b>Phiếu đề nghị vật tư gửi công ty</b><small id="tqDnChu">Đang tải…</small></span><span class="dem" id="tqDnDem" style="display:none"></span></button>
+  <!-- 3. Vật tư thuê: 4 ô tổng + biểu đồ từng bên cho thuê gộp trong 1 khối (v1.5.1) -->
+  <div class="the" id="tqKhoiThue">
+    <h3 style="font-size:14px;margin:0 0 8px">Vật tư thuê — tình trạng trả</h3>
     <div class="tq-tong" id="tqTong"></div>
     <div class="nho-mo" id="tqLuc" style="margin-top:6px"></div>
+    <div class="tq-chu-thich" style="margin-top:10px"><span><i style="background:#0B4F9C"></i>Đã trả</span><span><i style="background:#E67E22"></i>Chưa trả (còn giữ)</span></div>
+    <div class="nho-mo" style="text-align:center;margin:-4px 0 8px">Chạm biểu đồ để xem chi tiết từng loại vật tư</div>
+    <div class="tq-luoi" id="tqLuoi"></div>
+    <div id="tqTrong" style="display:none;margin-top:8px"></div>
   </div>
-  <button class="nut-tq" onclick="moDeNghi()"><span class="ic">📋</span><span><b>Phiếu đề nghị vật tư gửi công ty</b><small id="tqDnChu">Đang tải…</small></span><span class="dem" id="tqDnDem" style="display:none"></span></button>
-  <h3 style="font-size:14px;margin:14px 0 4px">Vật tư thuê — tình trạng trả</h3>
-  <div class="tq-chu-thich"><span><i style="background:#0B4F9C"></i>Đã trả</span><span><i style="background:#E67E22"></i>Chưa trả (còn giữ)</span></div>
-  <div class="nho-mo" style="text-align:center;margin:-4px 0 8px">Chạm biểu đồ để xem chi tiết từng loại vật tư</div>
-  <div class="tq-luoi" id="tqLuoi"></div>
-  <div class="the" id="tqTrong" style="display:none"></div>
 </div>
 
 <!-- Chi tiết hàng thuê 1 bên cho thuê (v1.4) -->
