@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.6.3 (GitHub Pages) · 04/09/2026
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.7.0 (GitHub Pages) · 05/09/2026
+  v1.7.0: "Chọn ảnh có sẵn trong máy" chọn được NHIỀU ảnh (tối đa 10) — mỗi ảnh = 1 phiếu, app xếp hàng đợi: AI đọc phiếu 1,
+          trong lúc thủ kho kiểm phiếu 1 app đọc trước phiếu 2; gửi xong tự sang phiếu kế; "Hủy" hỏi bỏ 1 phiếu hay bỏ cả hàng đợi.
+          Màn kiểm tra hiện "Phiếu 2/5". Không đổi backend (Code v0.12.1).
   v1.6.3: chọn công trình ngay trên màn Đề nghị vật tư (ô chọn đồng bộ với Tổng quan); ô Kho nhận khi lập phiếu chỉ liệt kê kho
           của công trình đang chọn — công trình chưa khai kho thì báo rõ. Đi cùng Code v0.12.1 (ADMIN thấy mọi dự án app báo cáo).
   v1.6.2: bản in BM 16.04 — khổ A4 dọc, lề trái 20 mm · phải 10 mm · trên 15 mm · dưới 15 mm (@page); ảnh header cắt bỏ viền trắng
@@ -286,7 +289,7 @@
     <button class="nut" onclick="chup('NHAN_THUE')">📦 Nhận hàng thuê</button>
     <button class="nut phu" onclick="chup('TRA_THUE')">↩️ Trả hàng thuê</button>
     <input id="fileAnhChup" type="file" accept="image/*" capture="environment" style="display:none" onchange="anhDaChon(event)">
-    <input id="fileAnhTai" type="file" accept="image/*" style="display:none" onchange="anhDaChon(event)">
+    <input id="fileAnhTai" type="file" accept="image/*" multiple style="display:none" onchange="anhDaChon(event)">
     <div class="nho-mo">Chụp thẳng, đủ sáng, lấy trọn khung phiếu — hoặc chọn ảnh phiếu đã có trong máy. Ảnh được nén trước khi gửi.</div>
   </div>
 </div>
@@ -360,7 +363,7 @@
   <h3 style="margin:0 0 4px" id="naTieuDe">Lấy ảnh phiếu</h3>
   <div class="nho-mo" style="margin-bottom:8px">Chọn kho / bãi: <b id="naKho"></b></div>
   <button class="nut" onclick="layAnh('Chup')">📷 Chụp ảnh phiếu</button>
-  <button class="nut phu" onclick="layAnh('Tai')">🖼 Chọn ảnh có sẵn trong máy</button>
+  <button class="nut phu" onclick="layAnh('Tai')">🖼 Chọn ảnh có sẵn trong máy (chọn được nhiều)</button>
   <button class="nut phu" onclick="dong('moNguonAnh')">Hủy</button>
 </div></div>
 
@@ -555,33 +558,49 @@ function layAnh(nguon) {
   dong('moNguonAnh');
   var inp = document.getElementById('fileAnh' + nguon); inp.value = ''; inp.click();
 }
+var HD = { ds: [], i: 0 };                              // v1.7: hàng đợi ảnh phiếu (mỗi ảnh = 1 phiếu)
+var HD_TOI_DA = 10;
 function anhDaChon(ev) {
-  var f = ev.target.files && ev.target.files[0]; if (!f) return;
-  tai(true, 'Đang nén ảnh…');
-  var img = new Image();
-  img.onload = function () {
-    var MAX = 1600, w = img.width, h = img.height;
-    if (Math.max(w, h) > MAX) { var ty = MAX / Math.max(w, h); w = Math.round(w * ty); h = Math.round(h * ty); }
-    var c = document.createElement('canvas'); c.width = w; c.height = h;
-    c.getContext('2d').drawImage(img, 0, 0, w, h);
-    var dataUrl = c.toDataURL('image/jpeg', 0.8);
-    document.getElementById('ktAnh').src = dataUrl;
-    tai(true, 'AI đang đọc phiếu (10–60 giây)…');
-    api('ocrPhieu', {
-      loai: loaiDangChup, ma_da: DL.user.ma_da, ma_kho: document.getElementById('chonKho').value,
-      anh_base64: dataUrl.split(',')[1], mime: 'image/jpeg', thiet_bi: THIET_BI
-    }, 150).then(function (kq) {
-      tai(false);
-      OCR = kq; veKiemTra();
-    }).catch(function (e) { tai(false); bao('AI không đọc được (' + e.message + ').\nAnh có thể thử chụp lại hoặc lập phiếu bằng tab Xuất kho / nhập tay trên Sheets.'); });
-  };
-  img.src = URL.createObjectURL(f);
+  var fs = Array.prototype.slice.call(ev.target.files || []); if (!fs.length) return;
+  if (fs.length > HD_TOI_DA) { bao('Chọn tối đa ' + HD_TOI_DA + ' ảnh một lần — app lấy ' + HD_TOI_DA + ' ảnh đầu.'); fs = fs.slice(0, HD_TOI_DA); }
+  HD = { ds: fs.map(function (f) { return { file: f }; }), i: 0, loai: loaiDangChup, kho: document.getElementById('chonKho').value };
+  moPhieuHangDoi(0);
+}
+function docOcrHangDoi(j) {                                // nén + AI đọc ảnh thứ j; gọi 2 lần chỉ chạy 1 lần
+  var x = HD.ds[j]; if (!x) return Promise.resolve(null); if (x.p) return x.p;
+  x.p = new Promise(function (res) { nenAnhFile(x.file, res); }).then(function (dataUrl) {
+    x.dataUrl = dataUrl;
+    return api('ocrPhieu', { loai: HD.loai, ma_da: DL.user.ma_da, ma_kho: HD.kho, anh_base64: dataUrl.split(',')[1], mime: 'image/jpeg', thiet_bi: THIET_BI }, 150);
+  }).then(function (kq) { x.kq = kq; return x; }, function (e) { x.loi = e.message; return x; });
+  return x.p;
+}
+function moPhieuHangDoi(j) {
+  HD.i = j; var n = HD.ds.length;
+  tai(true, n > 1 ? 'AI đang đọc phiếu ' + (j + 1) + '/' + n + ' (10–60 giây mỗi phiếu)…' : 'AI đang đọc phiếu (10–60 giây)…');
+  docOcrHangDoi(j).then(function (x) {
+    tai(false);
+    if (j + 1 < n) docOcrHangDoi(j + 1).then(function () { var el = document.getElementById('hdChu'); if (el && HD.i === j) el.outerHTML = chuHangDoi(); });   // đọc trước phiếu kế; xong thì cập nhật dòng trạng thái
+    if (x.loi) {
+      var conLai = n - j - 1;
+      if (conLai > 0 && confirm('AI không đọc được ảnh ' + (j + 1) + '/' + n + ' (' + x.loi + ').\nBỏ qua ảnh này và sang ảnh kế?')) return phieuTiepTheo();
+      bao('AI không đọc được (' + x.loi + ').\nAnh có thể thử chụp lại hoặc lập phiếu bằng tab Xuất kho / nhập tay trên Sheets.');
+      return ketThucHangDoi();
+    }
+    document.getElementById('ktAnh').src = x.dataUrl; OCR = x.kq; veKiemTra();
+  });
+}
+function phieuTiepTheo() { var j = HD.i + 1; if (j < HD.ds.length) moPhieuHangDoi(j); else ketThucHangDoi(); }
+function ketThucHangDoi() { var n = HD.ds.length; HD = { ds: [], i: 0 }; OCR = null; moTab('Chup'); return n; }
+function chuHangDoi() {                                    // dòng "Phiếu 2/5" trên màn kiểm tra
+  var n = HD.ds.length; if (n <= 1) return '';
+  var sau = HD.ds[HD.i + 1], tt = !sau ? '' : sau.kq ? ' · phiếu kế đã đọc xong' : sau.loi ? ' · phiếu kế AI không đọc được' : ' · đang đọc trước phiếu kế…';
+  return '<div class="canh-bao" id="hdChu" style="background:#e3f2fd;border-color:#90caf9">📚 Phiếu <b>' + (HD.i + 1) + '/' + n + '</b> · còn ' + (n - HD.i - 1) + ' ảnh chờ' + tt + '</div>';
 }
 
 /* ================= màn kiểm tra ================= */
 function veKiemTra() {
   var k = OCR.ket_qua, h = k.header;
-  document.getElementById('ktCanhBao').innerHTML =
+  document.getElementById('ktCanhBao').innerHTML = chuHangDoi() +
     '<div class="the"><b>' + TEN_LOAI[k.loai] + '</b> · ' + k.thong_ke.so_dong + ' dòng · <span class="tem XANH">' + k.thong_ke.xanh + '</span> <span class="tem VANG">' + k.thong_ke.vang + '</span> <span class="tem DO">' + k.thong_ke.do + '</span></div>' +
     (k.canh_bao || []).map(function (c) { return '<div class="canh-bao">⚠ ' + esc(c) + '</div>'; }).join('');
   document.getElementById('ktTenNcc').textContent = h.ten_ncc_tren_phieu || '(không đọc được)';
@@ -658,7 +677,11 @@ function taoMaTam() {
     dong('moChonMa'); veDongOcr();
   }).catch(function (e) { tai(false); bao(e.message); });
 }
-function huyKiemTra() { OCR = null; moTab('Chup'); }
+function huyKiemTra() {
+  var conLai = HD.ds.length - HD.i - 1;
+  if (conLai > 0) { if (confirm('Bỏ phiếu này. Còn ' + conLai + ' ảnh chưa xử lý — tiếp tục với ảnh kế?\n(Bấm Hủy để bỏ cả hàng đợi)')) return phieuTiepTheo(); }
+  ketThucHangDoi();
+}
 function guiPhieu() {
   var k = OCR.ket_qua;
   var maDt = document.getElementById('ktMaDt').value;
@@ -667,7 +690,7 @@ function guiPhieu() {
   if (thieu.length) return bao('Còn ' + thieu.length + ' dòng chưa có mã vật tư (dòng đỏ). Chạm vào dòng để chọn mã hoặc tạo VT-TMP.');
   tai(true, 'Đang ghi phiếu…');
   api('guiPhieuOcr', {
-    loai: k.loai, ma_da: DL.user.ma_da, ma_kho: document.getElementById('chonKho').value,
+    loai: k.loai, ma_da: DL.user.ma_da, ma_kho: HD.kho || document.getElementById('chonKho').value,   // v1.7: kho chốt lúc chọn ảnh
     thiet_bi: THIET_BI, ocr_id: OCR.ocr_id, ai_doc_goc: OCR.ai_doc_goc,
     header: { ma_dt: maDt, so_phieu_ncc: document.getElementById('ktSoPhieu').value,
       ngay_tren_phieu: k.header.ngay_tren_phieu, nguoi_giao: document.getElementById('ktNguoiGiao').value,
@@ -680,8 +703,9 @@ function guiPhieu() {
       mau: d.mau, tin_cay: d.tin_cay, thu_kho_sua: !!d.thu_kho_sua, vi_tri_luu: d.vi_tri_luu || '', ghi_chu: '', co: d.co || [] }; })
   }, 90).then(function (kq) {
     tai(false);
-    bao('Đã ghi phiếu ' + kq.so_phieu + '\nTrạng thái: ' + (kq.trang_thai === 'DA_DUYET' ? 'TỰ ĐỘNG DUYỆT' + (kq.kiem_mau ? ' (kế toán sẽ kiểm mẫu)' : '') : 'CHỜ KẾ TOÁN DUYỆT'));
-    OCR = null; moTab('Chup');
+    var conLai = HD.ds.length - HD.i - 1;
+    bao('Đã ghi phiếu ' + kq.so_phieu + '\nTrạng thái: ' + (kq.trang_thai === 'DA_DUYET' ? 'TỰ ĐỘNG DUYỆT' + (kq.kiem_mau ? ' (kế toán sẽ kiểm mẫu)' : '') : 'CHỜ KẾ TOÁN DUYỆT') + (conLai > 0 ? '\n→ Sang phiếu ' + (HD.i + 2) + '/' + HD.ds.length : ''));
+    OCR = null; phieuTiepTheo();                             // v1.7: còn ảnh trong hàng đợi thì mở phiếu kế
   }).catch(function (e) { tai(false); bao('Lỗi: ' + e.message); });
 }
 
