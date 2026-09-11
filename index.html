@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.7.0 (GitHub Pages) · 05/09/2026
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.8.0 (GitHub Pages) · 11/09/2026
+  v1.8.0: CHI PHÍ THUÊ VẬT TƯ TĂNG THEO NGÀY (anh yêu cầu 11/09) — Tổng quan có HÀNG NÚT THỐNG KÊ trên đầu:
+          [📋 Đề nghị] [🔄 Hàng thuê] [💰 Chi phí thuê]; nút Chi phí thuê mở khối: 4 ô (lũy kế đến hôm nay · tiền mỗi ngày · số ngày
+          thuê · giá trị đền bù nếu mất), BIỂU ĐỒ ĐƯỜNG lũy kế theo ngày của từng bên cho thuê + tổng (SVG), danh sách bên cho thuê
+          (chạm → bảng từng loại: còn giữ, giá/ngày, tiền/ngày, lũy kế, đền bù), cảnh báo loại đang giữ CHƯA CÓ GIÁ. Nguồn: hành động
+          chiPhiThue (Code v0.13, sheet GIA_THUE). Giá/ngày = giá tháng / 30; tính từ ngày nhận đến hết ngày trước ngày trả.
   v1.7.0: "Chọn ảnh có sẵn trong máy" chọn được NHIỀU ảnh (tối đa 10) — mỗi ảnh = 1 phiếu, app xếp hàng đợi: AI đọc phiếu 1,
           trong lúc thủ kho kiểm phiếu 1 app đọc trước phiếu 2; gửi xong tự sang phiếu kế; "Hủy" hỏi bỏ 1 phiếu hay bỏ cả hàng đợi.
           Màn kiểm tra hiện "Phiếu 2/5". Không đổi backend (Code v0.12.1).
@@ -128,6 +133,18 @@
   #htBang td.so{text-align:right;white-space:nowrap}
   .pct-thanh{display:block;height:5px;border-radius:3px;background:#E67E22;margin-top:3px;overflow:hidden}
   .pct-thanh i{display:block;height:100%;background:#0B4F9C}
+  /* v1.8: hàng nút thống kê + chi phí thuê */
+  .tq-hang{display:flex;gap:6px;margin:0 0 10px}
+  .tq-nut{flex:1;min-width:0;background:#fff;border:1.5px solid var(--vien);border-radius:10px;padding:8px 4px 7px;text-align:center;font-family:inherit;color:#1c2430;position:relative}
+  .tq-nut .ic{font-size:22px;line-height:1} .tq-nut b{display:block;font-size:12.5px;margin-top:3px;color:var(--xanh);white-space:nowrap} .tq-nut small{display:block;font-size:11px;color:#555;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tq-nut.chon{border-color:var(--xanh);background:#FFF5F5;box-shadow:inset 0 -3px 0 var(--xanh)}
+  .tq-nut .dem{position:absolute;top:-6px;right:-4px;background:var(--do);color:#fff;border-radius:11px;padding:1px 7px;font-weight:700;font-size:12px}
+  .cp-ncc{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--vien);border-radius:10px;padding:9px 10px;margin-top:8px;cursor:pointer}
+  .cp-ncc:active{background:#fff5f5} .cp-ncc i.mau{flex:none;width:12px;height:12px;border-radius:3px} .cp-ncc .t{flex:1;min-width:0} .cp-ncc .t b{display:block;font-size:13.5px} .cp-ncc .t small{color:#555;font-size:12px}
+  .cp-ncc .tien{text-align:right;flex:none} .cp-ncc .tien b{display:block;font-size:15px;color:var(--do)} .cp-ncc .tien small{color:#555;font-size:11.5px}
+  .cp-canh{background:#fff8e1;border:1px solid #f0c36d;border-radius:8px;padding:8px 10px;margin-top:8px;font-size:12.5px}
+  #cpBieuDo svg{width:100%;height:auto;display:block}
+  #cpBang{min-width:540px} #cpBang td:first-child{min-width:150px} #cpBang td.so{text-align:right;white-space:nowrap} #cpBang tr.thieu td{background:#ffebee}
   /* v1.5: phiếu đề nghị */
   .nut-tq{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:#fff;border:1.5px solid var(--xanh);border-radius:10px;padding:11px 12px;margin-top:8px;font-family:inherit;color:#1c2430}
   .nut-tq .ic{font-size:26px} .nut-tq b{font-size:15px;color:var(--xanh)} .nut-tq small{display:block;color:#555;font-size:12.5px}
@@ -191,8 +208,23 @@
   <div class="the">
     <label>Công trình</label><select id="tqDuAn" onchange="doiDuAn(this.value)"></select>
   </div>
-  <!-- 2. Tình trạng phiếu đề nghị vật tư (v1.5.1: đưa lên ngay dưới công trình) -->
-  <button class="nut-tq" style="margin:0 0 10px" onclick="moDeNghi()"><span class="ic">📋</span><span><b>Phiếu đề nghị vật tư gửi công ty</b><small id="tqDnChu">Đang tải…</small></span><span class="dem" id="tqDnDem" style="display:none"></span></button>
+  <!-- 2. Hàng nút thống kê (v1.8): Đề nghị mở màn riêng; Hàng thuê / Chi phí thuê đổi khối bên dưới -->
+  <div class="tq-hang">
+    <button class="tq-nut" id="tqNutDN" onclick="moDeNghi()"><span class="ic">📋</span><b>Đề nghị VT</b><small id="tqDnChu">Đang tải…</small><span class="dem" id="tqDnDem" style="display:none"></span></button>
+    <button class="tq-nut chon" id="tqNutHT" onclick="chonKhoiTq('HT')"><span class="ic">🔄</span><b>Hàng thuê</b><small id="tqHtChu">Đang tải…</small></button>
+    <button class="tq-nut" id="tqNutCP" onclick="chonKhoiTq('CP')"><span class="ic">💰</span><b>Chi phí thuê</b><small id="tqCpChu">Đang tải…</small><span class="dem" id="tqCpDem" style="display:none"></span></button>
+  </div>
+  <!-- 3b. Chi phí thuê theo ngày (v1.8) -->
+  <div class="the" id="tqKhoiChiPhi" style="display:none">
+    <h3 style="font-size:14px;margin:0 0 8px">Chi phí thuê vật tư — tăng theo ngày</h3>
+    <div class="tq-tong" id="cpTong"></div>
+    <div class="nho-mo" id="cpLuc" style="margin-top:6px"></div>
+    <div id="cpBieuDo" style="margin-top:10px"></div>
+    <div class="nho-mo" style="text-align:center;margin:2px 0 4px">Lũy kế tiền thuê (chưa VAT) theo ngày · chạm tên bên cho thuê để xem từng loại</div>
+    <div id="cpDs"></div>
+    <div id="cpCanh"></div>
+    <div id="cpTrong" style="display:none;margin-top:8px"></div>
+  </div>
   <!-- 3. Vật tư thuê: 4 ô tổng + biểu đồ từng bên cho thuê gộp trong 1 khối (v1.5.1) -->
   <div class="the" id="tqKhoiThue">
     <h3 style="font-size:14px;margin:0 0 8px">Vật tư thuê — tình trạng trả</h3>
@@ -204,6 +236,15 @@
     <div id="tqTrong" style="display:none;margin-top:8px"></div>
   </div>
 </div>
+
+<!-- Chi tiết chi phí thuê 1 bên cho thuê (v1.8) -->
+<div class="mo" id="moChiPhi"><div>
+  <h3 id="cpTieuDe" style="margin:0 0 4px"></h3>
+  <div class="nho-mo" id="cpTomTat" style="margin-bottom:8px"></div>
+  <div style="overflow-x:auto"><table id="cpBang"><thead><tr><th>Loại vật tư</th><th style="text-align:right">Còn giữ</th><th style="text-align:right">Giá/ngày</th><th style="text-align:right">Tiền/ngày</th><th style="text-align:right">Lũy kế</th><th style="text-align:right">Đền bù</th></tr></thead><tbody></tbody></table></div>
+  <div class="nho-mo" style="margin-top:6px">Giá/ngày = giá tháng theo hợp đồng / 30 × hệ số (hợp đồng tính theo m, vật tư tính theo cây → hệ số = chiều dài). Đền bù = còn giữ × đơn giá đền bù hợp đồng. Dòng đỏ: chưa có giá trong sheet GIA_THUE.</div>
+  <button class="nut phu" onclick="dong('moChiPhi')">Đóng</button>
+</div></div>
 
 <!-- Chi tiết hàng thuê 1 bên cho thuê (v1.4) -->
 <div class="mo" id="moHangThue"><div>
@@ -467,7 +508,7 @@ function moTab(t) {
   var b = document.getElementById('tab' + t); if (b) b.classList.add('chon');
   if (t === 'Ton') taiTon();
   if (t === 'Duyet') taiChoDuyet();
-  if (t === 'TongQuan') { taiHangThue(); taiDeNghi(true); }
+  if (t === 'TongQuan') { apDungKhoiTq(); taiHangThue(); taiDeNghi(true); taiChiPhi(); }   // v1.8: thêm chi phí thuê
   if (t === 'DeNghi') taiDeNghi(false);
 }
 function dong(id) { document.getElementById(id).classList.remove('hien'); }
@@ -841,6 +882,7 @@ function veHangThue(kq, dangLamMoi) {
   var t = kq.tong || { nhan: 0, tra: 0, con: 0, pct_tra: 0 };
   document.getElementById('tqTong').innerHTML = '<div><small>Tổng nhận</small><b>' + soVn(t.nhan) + '</b></div><div><small>Tổng trả</small><b>' + soVn(t.tra) + '</b></div>' +
     '<div><small>Còn giữ</small><b style="color:var(--do)">' + soVn(t.con) + '</b></div><div><small>Đã trả (TB các loại)</small><b>' + (t.pct_tra || 0) + '%</b></div>';
+  document.getElementById('tqHtChu').textContent = 'còn giữ ' + soVn(t.con) + ' · trả ' + (t.pct_tra || 0) + '%';   // v1.8: chữ dưới nút
   document.getElementById('tqLuc').textContent = 'Tính lúc ' + kq.luc + ' · ' + (kq.ncc || []).length + ' bên cho thuê · ' + (t.so_loai || 0) + ' loại vật tư · ' + (kq.so_dau_ky || 0) + ' dòng đầu kỳ + ' + (kq.so_phieu || 0) + ' phiếu đã duyệt · % = trung bình % trả của từng loại' + (dangLamMoi ? ' · đang làm mới…' : '');
   var trong = document.getElementById('tqTrong');
   if (!(kq.ncc || []).length) {
@@ -867,6 +909,107 @@ function moChiTietHangThue(i) {
   document.getElementById('moHangThue').classList.add('hien');
 }
 
+/* ================= chi phí thuê theo ngày (v1.8) ================= */
+var CP_CACHE = {}, TQ_KHOI = 'HT';
+var CP_MAU = ['#0B4F9C', '#E67E22', '#2E8B57', '#8E44AD', '#C0392B', '#16A085', '#7F8C8D', '#D4AC0D'];
+try { TQ_KHOI = localStorage.getItem('tq_khoi') === 'CP' ? 'CP' : 'HT'; } catch (e) { }
+function tienVn(x) {                                     // 1234567 → "1,23 tr" · 1234567890 → "1,23 tỷ" · 12345 → "12.345"
+  x = Number(x) || 0; var a = Math.abs(x);
+  if (a >= 1e9) return (x / 1e9).toLocaleString('vi-VN', { maximumFractionDigits: 2 }) + ' tỷ';
+  if (a >= 1e6) return (x / 1e6).toLocaleString('vi-VN', { maximumFractionDigits: a >= 1e8 ? 0 : 1 }) + ' tr';
+  return Math.round(x).toLocaleString('vi-VN');
+}
+function dongVn(x) { return Math.round(Number(x) || 0).toLocaleString('vi-VN'); }
+function ngaySo(vn) { var m = String(vn || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m ? Math.round(Date.UTC(+m[3], +m[2] - 1, +m[1]) / 864e5) : null; }
+function apDungKhoiTq() {                               // nút nào đang chọn thì hiện khối đó
+  var k = TQ_KHOI;
+  document.getElementById('tqNutHT').classList.toggle('chon', k === 'HT'); document.getElementById('tqNutCP').classList.toggle('chon', k === 'CP');
+  document.getElementById('tqKhoiThue').style.display = k === 'HT' ? '' : 'none'; document.getElementById('tqKhoiChiPhi').style.display = k === 'CP' ? '' : 'none';
+}
+function chonKhoiTq(k) {
+  TQ_KHOI = k; try { localStorage.setItem('tq_khoi', k); } catch (e) { }
+  apDungKhoiTq();
+  if (k === 'CP' && !CP_CACHE[maDaTq()]) taiChiPhi();
+}
+function taiChiPhi() {
+  var da = document.getElementById('tqDuAn').value; if (!da) return;
+  var cu = CP_CACHE[da];
+  if (cu) veChiPhi(cu, true); else if (TQ_KHOI === 'CP') tai(true, 'Đang tính chi phí thuê theo ngày…');
+  api('chiPhiThue', { ma_da: da }, 90).then(function (kq) {
+    tai(false); CP_CACHE[da] = kq;
+    if (document.getElementById('tqDuAn').value !== da) return;
+    veChiPhi(kq, false);
+  }).catch(function (e) { tai(false); document.getElementById('tqCpChu').textContent = '⚠ ' + e.message; if (!cu && TQ_KHOI === 'CP') bao(e.message); });
+}
+function veChiPhi(kq, dangLamMoi) {
+  var t = kq.tong || { luy_ke: 0, moi_ngay: 0, den_bu: 0 }, ncc = kq.ncc || [], coTien = ncc.filter(function (n) { return n.luy_ke > 0 || n.moi_ngay > 0; });
+  document.getElementById('tqCpChu').textContent = t.luy_ke ? tienVn(t.luy_ke) + ' · +' + tienVn(t.moi_ngay) + '/ngày' : (ncc.length ? 'chưa có giá' : 'chưa có dữ liệu');
+  var dem = document.getElementById('tqCpDem'), thieu = (kq.thieu_gia || []).length; dem.style.display = thieu ? '' : 'none'; dem.textContent = thieu ? thieu + ' chưa giá' : '';
+  document.getElementById('cpTong').innerHTML = '<div><small>Lũy kế đến ' + esc(kq.den_ngay || 'hôm nay') + '</small><b style="color:var(--do)">' + tienVn(t.luy_ke) + '</b></div><div><small>Mỗi ngày thêm</small><b>' + tienVn(t.moi_ngay) + '</b></div>' +
+    '<div><small>Ngày thuê' + (kq.tu_ngay ? ' từ ' + esc(kq.tu_ngay) : '') + '</small><b>' + (kq.so_ngay || 0) + '</b></div><div><small>Đền bù nếu mất</small><b>' + tienVn(t.den_bu) + '</b></div>';
+  document.getElementById('cpLuc').textContent = 'Tính lúc ' + kq.luc + ' · ' + ncc.length + ' bên cho thuê · ' + (t.so_ma || 0) + ' loại đang theo dõi' + ((t.so_ma_thieu_gia || 0) ? ' (' + t.so_ma_thieu_gia + ' chưa có giá)' : '') + ' · ' + (kq.so_gia || 0) + ' dòng bảng giá GIA_THUE · đơn vị đồng, chưa VAT' + (dangLamMoi ? ' · đang làm mới…' : '');
+  var trong = document.getElementById('cpTrong');
+  if (!ncc.length || !kq.so_gia) {
+    trong.style.display = ''; trong.innerHTML = !kq.so_gia ? '<b>Chưa có bảng giá thuê cho công trình này.</b><div class="nho-mo" style="margin-top:6px">Kế toán kho nhập bảng giá hợp đồng vào sheet <b>GIA_THUE</b> (ma_da · ma_dt · ma_vt · giá tháng · giá đền bù), chạy <code>testGiaThue</code> để kiểm tra mã.</div>' :
+      '<b>Chưa có số liệu hàng thuê cho công trình này.</b><div class="nho-mo" style="margin-top:6px">Cần dòng đầu kỳ trong <b>HANG_THUE_DAU_KY</b> (có <b>ngay_chot</b>) hoặc phiếu Nhận / Trả hàng thuê đã duyệt.</div>';
+    document.getElementById('cpBieuDo').innerHTML = ''; document.getElementById('cpDs').innerHTML = ''; document.getElementById('cpCanh').innerHTML = ''; return;
+  }
+  trong.style.display = 'none';
+  document.getElementById('cpBieuDo').innerHTML = veBieuDoChiPhi(coTien, kq);
+  document.getElementById('cpDs').innerHTML = ncc.map(function (n, i) {
+    var mau = coTien.indexOf(n) >= 0 ? CP_MAU[coTien.indexOf(n) % CP_MAU.length] : '#ccc';
+    return '<div class="cp-ncc" onclick="moChiTietChiPhi(' + i + ')"><i class="mau" style="background:' + mau + '"></i><span class="t"><b>' + esc(n.ten_dt) + '</b><small>còn giữ ' + soVn(n.con_giu) + ' · ' + n.so_ma + ' loại' + (n.so_ma_thieu_gia ? ' · <span style="color:var(--do)">' + n.so_ma_thieu_gia + ' chưa có giá</span>' : '') + ' · từ ' + esc(n.ngay_dau) + ' (' + n.so_ngay + ' ngày)</small></span>' +
+      '<span class="tien"><b>' + tienVn(n.luy_ke) + '</b><small>+' + tienVn(n.moi_ngay) + '/ngày · đền bù ' + tienVn(n.den_bu) + '</small></span></div>';
+  }).join('');
+  var canh = '';
+  if (thieu) canh += '<div class="cp-canh"><b>⚠ ' + thieu + ' loại đang giữ chưa có giá</b> — chưa tính tiền. Bổ sung sheet GIA_THUE:<br>' + kq.thieu_gia.slice(0, 12).map(function (x) { return esc(x.ten_dt) + ': ' + esc(x.ten_vt) + ' (' + esc(x.ma_vt) + ') còn ' + soVn(x.con) + ' ' + esc(x.don_vi); }).join('<br>') + (thieu > 12 ? '<br>… và ' + (thieu - 12) + ' loại nữa' : '') + '</div>';
+  if ((kq.canh_bao || []).length) canh += '<div class="cp-canh">' + kq.canh_bao.slice(0, 6).map(esc).join('<br>') + '</div>';
+  document.getElementById('cpCanh').innerHTML = canh;
+}
+function veBieuDoChiPhi(ncc, kq) {                       // SVG đường lũy kế theo ngày: mỗi bên 1 màu + tổng (nét đứt)
+  if (!ncc.length) return '';
+  var W = 360, H = 210, L = 44, R = 10, T = 12, B = 30, den = ngaySo(kq.den_ngay), tu = den, maxY = 1;
+  var duong = ncc.map(function (n) { return (n.moc || []).map(function (m) { return [ngaySo(m[0]), m[1]]; }).filter(function (p) { return p[0] !== null; }); });
+  duong.forEach(function (d) { d.forEach(function (p) { if (p[0] < tu) tu = p[0]; }); });
+  if (den === null || tu === den) return '<div class="nho-mo" style="text-align:center">Chưa đủ ngày để vẽ biểu đồ (mới 1 ngày).</div>';
+  function giaTri(d, x) {                                // nội suy tuyến tính (giữa 2 mốc tốc độ không đổi)
+    if (!d.length || x < d[0][0]) return 0;
+    for (var i = 0; i < d.length - 1; i++) if (x <= d[i + 1][0]) { var a = d[i], b = d[i + 1]; return b[0] === a[0] ? b[1] : a[1] + (b[1] - a[1]) * (x - a[0]) / (b[0] - a[0]); }
+    return d[d.length - 1][1];
+  }
+  var ngayDs = {}; duong.forEach(function (d) { d.forEach(function (p) { ngayDs[p[0]] = 1; }); }); ngayDs[tu] = 1; ngayDs[den] = 1;
+  var xs = Object.keys(ngayDs).map(Number).sort(function (a, b) { return a - b; });
+  var tong = xs.map(function (x) { var s = 0; duong.forEach(function (d) { s += giaTri(d, x); }); return [x, s]; });
+  tong.forEach(function (p) { if (p[1] > maxY) maxY = p[1]; });
+  var buoc = Math.pow(10, Math.floor(Math.log(maxY) / Math.LN10)); if (maxY / buoc < 2) buoc /= 5; else if (maxY / buoc < 5) buoc /= 2;
+  var yMax = Math.ceil(maxY / buoc) * buoc || 1;
+  function X(x) { return L + (x - tu) / (den - tu) * (W - L - R); } function Y(y) { return T + (1 - y / yMax) * (H - T - B); }
+  var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" font-family="inherit">';
+  for (var y = 0; y <= yMax + 1e-6; y += buoc) s += '<line x1="' + L + '" y1="' + Y(y).toFixed(1) + '" x2="' + (W - R) + '" y2="' + Y(y).toFixed(1) + '" stroke="#e5e7eb"/><text x="' + (L - 4) + '" y="' + (Y(y) + 3.5).toFixed(1) + '" text-anchor="end" font-size="9" fill="#666">' + tienVn(y) + '</text>';
+  var soNhan = Math.min(5, den - tu); for (var k = 0; k <= soNhan; k++) { var xd = tu + Math.round((den - tu) * k / soNhan), d = new Date(xd * 864e5); s += '<text x="' + X(xd).toFixed(1) + '" y="' + (H - B + 13) + '" text-anchor="' + (k === 0 ? 'start' : k === soNhan ? 'end' : 'middle') + '" font-size="9" fill="#666">' + ('0' + d.getUTCDate()).slice(-2) + '/' + ('0' + (d.getUTCMonth() + 1)).slice(-2) + '</text>'; }
+  s += '<line x1="' + L + '" y1="' + Y(0) + '" x2="' + (W - R) + '" y2="' + Y(0) + '" stroke="#999"/>';
+  duong.forEach(function (d, i) {
+    if (!d.length) return; var mau = CP_MAU[i % CP_MAU.length], pts = xs.map(function (x) { return X(x).toFixed(1) + ',' + Y(giaTri(d, x)).toFixed(1); });
+    s += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="' + mau + '" stroke-width="2.2" stroke-linejoin="round"/>';
+    var cuoi = d[d.length - 1]; s += '<circle cx="' + X(den).toFixed(1) + '" cy="' + Y(giaTri(d, den)).toFixed(1) + '" r="3" fill="' + mau + '"/>';
+  });
+  if (duong.length > 1) s += '<polyline points="' + tong.map(function (p) { return X(p[0]).toFixed(1) + ',' + Y(p[1]).toFixed(1); }).join(' ') + '" fill="none" stroke="#1c2430" stroke-width="1.6" stroke-dasharray="5 4"/>';
+  s += '<text x="' + (W - R) + '" y="' + (T - 2 > 8 ? T - 2 : 9) + '" text-anchor="end" font-size="9.5" fill="#1c2430">' + (duong.length > 1 ? '- - tổng ' : 'lũy kế ') + tienVn(maxY) + ' đ</text></svg>';
+  s += '<div class="tq-chu-thich" style="flex-wrap:wrap;gap:6px 12px;margin-top:4px">' + ncc.map(function (n, i) { return '<span><i style="background:' + CP_MAU[i % CP_MAU.length] + '"></i>' + esc(n.ten_dt.length > 26 ? n.ten_dt.slice(0, 25) + '…' : n.ten_dt) + '</span>'; }).join('') + '</div>';
+  return s;
+}
+function moChiTietChiPhi(i) {
+  var kq = CP_CACHE[document.getElementById('tqDuAn').value]; if (!kq || !kq.ncc[i]) return;
+  var n = kq.ncc[i];
+  document.getElementById('cpTieuDe').textContent = n.ten_dt;
+  document.getElementById('cpTomTat').textContent = n.ma_dt + ' · từ ' + n.ngay_dau + ' (' + n.so_ngay + ' ngày) · lũy kế ' + dongVn(n.luy_ke) + ' đ · mỗi ngày ' + dongVn(n.moi_ngay) + ' đ · đền bù ' + dongVn(n.den_bu) + ' đ';
+  document.querySelector('#cpBang tbody').innerHTML = n.vat_tu.map(function (v) {
+    return '<tr' + (v.thieu_gia ? ' class="thieu"' : '') + '><td>' + esc(v.ten_vt) + '<br><span class="nho-mo">' + esc(v.ma_vt) + ' · ' + esc(v.don_vi) + (v.he_so !== 1 ? ' · hệ số ' + v.he_so + ' (' + esc(v.don_vi_hd) + ')' : '') + (v.ghi_chu ? ' · ' + esc(v.ghi_chu) : '') + '</span></td>' +
+      '<td class="so">' + soVn(v.con) + '</td><td class="so">' + (v.thieu_gia ? '<b style="color:var(--do)">chưa có</b>' : dongVn(v.gia_ngay)) + '</td><td class="so">' + dongVn(v.moi_ngay) + '</td><td class="so"><b>' + dongVn(v.luy_ke) + '</b></td><td class="so">' + dongVn(v.den_bu) + '</td></tr>';
+  }).join('') + '<tr style="background:#eef1f5;font-weight:700"><td>Tổng</td><td></td><td></td><td class="so">' + dongVn(n.moi_ngay) + '</td><td class="so">' + dongVn(n.luy_ke) + '</td><td class="so">' + dongVn(n.den_bu) + '</td></tr>';
+  document.getElementById('moChiPhi').classList.add('hien');
+}
+
 /* ================= phiếu đề nghị vật tư (v1.5) ================= */
 var PDN_CACHE = {}, DN_LOC = 'MO', DN_CT = null, LD = { so_pdn: '', dong: [] }, BC_TT = '';
 var PDN_TEN = { LAP: 'Kế toán kho lập (nháp)', CHO_CHT: 'Chờ Chỉ huy trưởng duyệt', CHT_DUYET: 'CHT đã duyệt', DA_GUI_CTY: 'Đã gửi P. Đấu thầu & Quản lý thi công', DA_DUYET: 'Ban Tổng giám đốc đã duyệt',
@@ -881,7 +1024,7 @@ function maDaTq() { return document.getElementById('tqDuAn').value || (DL && DL.
 function doiDuAn(ma) {                                   // v1.6.3: 2 ô chọn công trình (Tổng quan + Đề nghị) luôn cùng giá trị
   document.getElementById('tqDuAn').value = ma; document.getElementById('dnDuAn').value = ma;
   if (document.getElementById('manDeNghi').classList.contains('hien')) taiDeNghi(false);
-  else { taiHangThue(); taiDeNghi(true); }
+  else { taiHangThue(); taiDeNghi(true); taiChiPhi(); }
 }
 function khoCuaDuAn(ma) { return (DL.user.khos || []).filter(function (k) { return !k.ma_da || k.ma_da === ma; }); }
 function moDeNghi() { moTab('DeNghi'); }
@@ -895,7 +1038,7 @@ function taiDeNghi(chiDem) {                            // chiDem: chỉ cập n
 }
 function veDeNghi(kq, chiDem) {
   var d = kq.dem || { mo: 0, thieu: 0, xong: 0 };
-  document.getElementById('tqDnChu').textContent = d.mo + ' phiếu đang mở · ' + d.thieu + ' thiếu hàng · ' + d.xong + ' hoàn thành';
+  document.getElementById('tqDnChu').textContent = d.mo + ' mở · ' + d.thieu + ' thiếu · ' + d.xong + ' xong';   // v1.8: chữ ngắn dưới nút
   var dem = document.getElementById('tqDnDem'); dem.style.display = d.thieu ? '' : 'none'; dem.textContent = d.thieu ? d.thieu + ' thiếu' : '';
   document.getElementById('dnDemMo').textContent = '(' + d.mo + ')'; document.getElementById('dnDemThieu').textContent = '(' + d.thieu + ')'; document.getElementById('dnDemXong').textContent = '(' + d.xong + ')';
   if (chiDem) return;
