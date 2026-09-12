@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.10.1 (GitHub Pages) · 12/09/2026
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.10.2 (GitHub Pages) · 12/09/2026
+  v1.10.2 (góp ý anh 12/09 tối, file "loai xe van chuyen.xlsx"): ô Loại xe = DANH SÁCH CHUẨN 13 loại xe lọc từ 8 HĐ (Xe thùng 2,5 / 6,5 / 8 / 10 / 15 / 18 / 30 / 34 tấn;
+    Xe cẩu 7 / 8 / 10 / 13 / 15 tấn) — dùng cho MỌI NCC kể cả NCC chưa có bảng cước; loại nào NCC đang chọn có giá trong HĐ thì hiện kèm giá và gửi đúng tên trong HĐ;
+    cuối danh sách là "Khác (ghi tay)". NCC chưa có bảng cước → mặc định "— Chọn loại xe —" và chặn Gửi nếu chưa chọn.
   v1.10.1 (góp ý anh 12/09 tối): khối Xe vận chuyển trên phiếu — BỎ ô Số chuyến (1 phiếu = 1 xe mặc định); Loại xe là danh sách
           sổ xuống gồm các loại trong HĐ của NCC + "Không dùng xe NCC (công trường tự chở)" + "Khác (ghi tay)" mở ô nhập; Thuê NCC cẩu
           là Không / các mức cẩu theo HĐ, NCC chưa có bảng giá cẩu thì vẫn chọn được "Có thuê cẩu" (kế toán bổ sung giá sau).
@@ -722,22 +725,38 @@ function veKhoiVcKiem() {
   var maDa = DL.user.ma_da; taiGiaVc(maDa).then(function (gia) { dienGiaVcKiem(gia); });
   document.getElementById('ktMaDt').onchange = function () { dienGiaVcKiem(GVC_CACHE[maDa] || {}); };
 }
-function dienGiaVcKiem(gia) {                            // v1.10.1: loại xe = danh sách HĐ + Không dùng xe NCC + Khác; cẩu = Không / mức HĐ / Có
-  var dt = document.getElementById('ktMaDt').value, G = gia[dt], sel = document.getElementById('ktVcLoaiXe'), cu = sel.value;
-  sel.innerHTML = '<option value="">— Không dùng xe NCC (công trường tự chở) —</option>' + (G ? G.cuoc.map(function (g) { return '<option value="' + esc(g.loai_xe) + '">' + esc(g.loai_xe) + ' — ' + dongVn(g.don_gia) + ' đ/chuyến</option>'; }).join('') : '') + '<option value="__KHAC__">Khác (ghi tay)</option>';
-  var tuChon = sel.dataset.tuChon === '1' && cu && [...sel.options].some(function (o) { return o.value === cu; });   // thủ kho đã tự chọn → giữ
-  sel.value = tuChon ? cu : (G && G.cuoc.length ? G.cuoc[0].loai_xe : (dt ? '__KHAC__' : ''));                       // mặc định: loại xe đầu HĐ; NCC chưa có bảng cước → Khác
+var DS_LOAI_XE = [                                        // v1.10.2: danh sách chuẩn lọc từ file "loai xe van chuyen.xlsx" (8 HĐ, 12/09/2026)
+  { kieu: 'thung', tan: 2.5, ten: 'Xe thùng 2,5 tấn' }, { kieu: 'thung', tan: 6.5, ten: 'Xe thùng 6,5 tấn' }, { kieu: 'thung', tan: 8, ten: 'Xe thùng 8 tấn' },
+  { kieu: 'thung', tan: 10, ten: 'Xe thùng 10 tấn' }, { kieu: 'thung', tan: 15, ten: 'Xe thùng 15 tấn' }, { kieu: 'thung', tan: 18, ten: 'Xe thùng 18 tấn' },
+  { kieu: 'thung', tan: 30, ten: 'Xe thùng 30 tấn (hoặc sơ mi rơ moóc)' }, { kieu: 'thung', tan: 34, ten: 'Xe thùng 34 tấn' },
+  { kieu: 'cau', tan: 7, ten: 'Xe cẩu 7 tấn' }, { kieu: 'cau', tan: 8, ten: 'Xe cẩu 8 tấn' }, { kieu: 'cau', tan: 10, ten: 'Xe cẩu 10 tấn' },
+  { kieu: 'cau', tan: 13, ten: 'Xe cẩu 13 tấn' }, { kieu: 'cau', tan: 15, ten: 'Xe cẩu 15 tấn' }];
+function lxPhanTich(s) { var t = boDau(s), m = t.match(/(\d+(?:[.,]\d+)?)\s*t/); return { kieu: /\bcau\b/.test(t) ? 'cau' : 'thung', tan: m ? parseFloat(m[1].replace(',', '.')) : null }; }
+function dienGiaVcKiem(gia) {                            // v1.10.2: loại xe = danh sách chuẩn (kèm giá HĐ của NCC nếu có) + Không dùng xe NCC + Khác; cẩu = Không / mức HĐ / Có
+  var dt = document.getElementById('ktMaDt').value, G = gia[dt], cuoc = G && G.cuoc ? G.cuoc : [], sel = document.getElementById('ktVcLoaiXe'), cu = sel.value;
+  var daKhop = {}, nhom = { thung: [], cau: [] };
+  DS_LOAI_XE.forEach(function (c) {
+    var g = null; for (var i = 0; i < cuoc.length; i++) { var p = lxPhanTich(cuoc[i].loai_xe); if (p.tan === c.tan && p.kieu === c.kieu) { g = cuoc[i]; break; } }
+    if (g) daKhop[g.loai_xe] = 1;
+    nhom[c.kieu].push('<option value="' + esc(g ? g.loai_xe : c.ten) + '">' + esc(c.ten) + (g ? ' — ' + dongVn(g.don_gia) + ' đ/chuyến' : '') + '</option>');
+  });
+  var them = cuoc.filter(function (g) { return !daKhop[g.loai_xe]; }).map(function (g) { return '<option value="' + esc(g.loai_xe) + '">' + esc(g.loai_xe) + ' — ' + dongVn(g.don_gia) + ' đ/chuyến</option>'; });
+  sel.innerHTML = (cuoc.length ? '' : '<option value="__CHON__">— Chọn loại xe —</option>') + '<option value="">— Không dùng xe NCC (công trường tự chở) —</option>' +
+    '<optgroup label="Xe thùng">' + nhom.thung.join('') + '</optgroup><optgroup label="Xe cẩu (xe có cẩu)">' + nhom.cau.join('') + '</optgroup>' +
+    (them.length ? '<optgroup label="Loại khác trong HĐ">' + them.join('') + '</optgroup>' : '') + '<option value="__KHAC__">Khác (ghi tay)</option>';
+  var tuChon = sel.dataset.tuChon === '1' && cu && cu !== '__CHON__' && [...sel.options].some(function (o) { return o.value === cu; });   // thủ kho đã tự chọn → giữ
+  sel.value = tuChon ? cu : (cuoc.length ? cuoc[0].loai_xe : '__CHON__');                                                             // mặc định: loại xe đầu trong HĐ của NCC; chưa có bảng cước → bắt chọn
   if (!tuChon) sel.dataset.tuChon = '';
   cxDoiLoaiXeKiem();
   var cau = document.getElementById('ktVcLoaiCau');
   cau.innerHTML = '<option value="">Không</option>' + (G && G.cau.length ? G.cau.map(function (g) { return '<option value="' + esc(g.loai_xe) + '">Có — ' + esc(g.loai_xe.replace(/^cẩu hàng bằng\s*/i, 'cẩu ')) + ' · ' + dongVn(g.don_gia) + ' đ</option>'; }).join('') : '<option value="Có">Có thuê cẩu (chưa có giá trong HĐ — kế toán bổ sung)</option>');
   var chu = document.getElementById('ktVcChu'), goc = chu.textContent.split(' Bên này')[0];
-  chu.textContent = goc + (dt && !G ? ' Bên này chưa có bảng cước trong GIA_VAN_CHUYEN — chọn "Khác" ghi loại xe, kế toán bổ sung giá sau.' : '');
+  chu.textContent = goc + (dt && !G ? ' Bên này chưa có bảng cước trong GIA_VAN_CHUYEN — vẫn chọn loại xe trong danh sách, kế toán bổ sung giá sau.' : '');
 }
 function cxDoiLoaiXeKiem(nguoiChon) { var sel = document.getElementById('ktVcLoaiXe'); if (nguoiChon) sel.dataset.tuChon = '1'; document.getElementById('ktVcLoaiXeKhac').style.display = sel.value === '__KHAC__' ? '' : 'none'; }
 function layVcKiem() {
   if (!laPhieuThue()) return null;
-  var v = document.getElementById('ktVcLoaiXe').value, lx = v === '__KHAC__' ? document.getElementById('ktVcLoaiXeKhac').value.trim() : v;
+  var v = document.getElementById('ktVcLoaiXe').value, lx = v === '__KHAC__' ? document.getElementById('ktVcLoaiXeKhac').value.trim() : (v === '__CHON__' ? '' : v);
   return { loai_xe: lx, so_chuyen: lx ? 1 : 0, loai_cau: document.getElementById('ktVcLoaiCau').value, so_dem_luu_ca: Number(document.getElementById('ktVcSoDem').value) || 0, ghi_chu: document.getElementById('ktVcGhiChu').value.trim() };
 }
 function veDongOcr() {
@@ -813,8 +832,10 @@ function guiPhieu() {
   if (!maDt) return bao('Chưa chọn đối tác. Nếu NCC chưa có trong danh mục, báo kế toán kho thêm vào sheet DOI_TAC rồi đăng nhập lại.');
   var thieu = k.dong.filter(function (d) { return !d.ma_vt; });
   if (thieu.length) return bao('Còn ' + thieu.length + ' dòng chưa có mã vật tư (dòng đỏ). Chạm vào dòng để chọn mã hoặc tạo VT-TMP.');
+  if (laPhieuThue() && document.getElementById('ktVcLoaiXe').value === '__CHON__')
+    return bao('Chưa chọn loại xe vận chuyển — chọn trong danh sách, hoặc "Không dùng xe NCC" nếu công trường tự chở.');   // v1.10.2
   if (laPhieuThue() && document.getElementById('ktVcLoaiXe').value === '__KHAC__' && !document.getElementById('ktVcLoaiXeKhac').value.trim())
-    return bao('Đã chọn loại xe "Khác" — ghi tay loại xe (VD: Xe 10 tấn) hoặc chọn lại trong danh sách.');   // v1.10.1
+    return bao('Đã chọn loại xe "Khác" — ghi tay loại xe (VD: Xe thùng 10 tấn) hoặc chọn lại trong danh sách.');   // v1.10.1
   tai(true, 'Đang ghi phiếu…');
   api('guiPhieuOcr', {
     loai: k.loai, ma_da: DL.user.ma_da, ma_kho: HD.kho || document.getElementById('chonKho').value,   // v1.7: kho chốt lúc chọn ảnh
