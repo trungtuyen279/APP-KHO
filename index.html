@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.10.2 (GitHub Pages) · 12/09/2026
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.11.0 (GitHub Pages) · 12/09/2026
+  v1.11.0 (anh yêu cầu 12/09 tối — mở app không phải đợi): DỮ LIỆU MÀN HÌNH LƯU TRÊN MÁY. Hàng thuê, chi phí thuê, tồn kho, phiếu đề nghị,
+    danh sách chờ duyệt được lưu localStorage theo từng tài khoản (khóa kho_may_<email>); mở app hiện NGAY số lần trước (kèm "Tính lúc …"),
+    rồi tải mới ngầm; số có đổi mới vẽ lại (so JSON bỏ trường luc). Mở app xong tự tải ngầm Tồn kho + Chờ duyệt để chuyển tab không chờ.
+    Mất mạng vẫn xem được số lần trước. Đăng xuất xóa bộ nhớ này. Không đổi máy chủ.
   v1.10.2 (góp ý anh 12/09 tối, file "loai xe van chuyen.xlsx"): ô Loại xe = DANH SÁCH CHUẨN 13 loại xe lọc từ 8 HĐ (Xe thùng 2,5 / 6,5 / 8 / 10 / 15 / 18 / 30 / 34 tấn;
     Xe cẩu 7 / 8 / 10 / 13 / 15 tấn) — dùng cho MỌI NCC kể cả NCC chưa có bảng cước; loại nào NCC đang chọn có giá trong HĐ thì hiện kèm giá và gửi đúng tên trong HĐ;
     cuối danh sách là "Khác (ghi tay)". NCC chưa có bảng cước → mặc định "— Chọn loại xe —" và chặn Gửi nếu chưa chọn.
@@ -542,6 +546,27 @@ function api(action, data, giay) {
 function luuPhien(kq) { try { localStorage.setItem('kho_phien', JSON.stringify({ token: TOKEN, dl: kq, luc: Date.now(), ver: CONFIG.VERSION })); } catch (e) { } }
 function docPhien() { try { return JSON.parse(localStorage.getItem('kho_phien') || 'null'); } catch (e) { return null; } }
 function xoaPhien() { TOKEN = ''; DL = null; try { localStorage.removeItem('kho_phien'); } catch (e) { } }
+/* v1.11: bộ nhớ màn hình trên máy — mở app hiện ngay số lần trước, tải mới ngầm, chỉ vẽ lại khi số đổi */
+var HT_CACHE = {}, CP_CACHE = {}, TON_CACHE = {}, PDN_CACHE = {}, DUYET_CACHE = null, MAY_DA_DOC = false, NGAM_DA = false, luuMayHen = null;
+function mayKhoa() { return 'kho_may_' + String((DL && DL.user && DL.user.email) || '').toLowerCase(); }
+function docMay() {
+  if (MAY_DA_DOC || !DL) return; MAY_DA_DOC = true;
+  try { var m = JSON.parse(localStorage.getItem(mayKhoa()) || 'null'); if (m && m.ver === 1) { HT_CACHE = m.ht || {}; CP_CACHE = m.cp || {}; TON_CACHE = m.ton || {}; PDN_CACHE = m.pdn || {}; DUYET_CACHE = m.duyet || null; } } catch (e) { }
+}
+function luuMay() {                                        // gộp nhiều lần ghi trong 300 ms; đầy bộ nhớ thì bỏ qua (app vẫn chạy)
+  clearTimeout(luuMayHen);
+  luuMayHen = setTimeout(function () { try { if (DL) localStorage.setItem(mayKhoa(), JSON.stringify({ ver: 1, luc: Date.now(), ht: HT_CACHE, cp: CP_CACHE, ton: TON_CACHE, pdn: PDN_CACHE, duyet: DUYET_CACHE })); } catch (e) { } }, 300);
+}
+function xoaMay() { try { localStorage.removeItem(mayKhoa()); } catch (e) { } HT_CACHE = {}; CP_CACHE = {}; TON_CACHE = {}; PDN_CACHE = {}; DUYET_CACHE = null; MAY_DA_DOC = false; NGAM_DA = false; }
+function daDoi(cu, moi) {                                  // so dữ liệu bỏ trường thời điểm tính / cờ cache
+  function s(x) { return JSON.stringify(x, function (k, v) { return (k === 'luc' || k === 'tu_cache' || k === 'ms') ? undefined : v; }); }
+  return !cu || s(cu) !== s(moi);
+}
+function taiNgam() {                                       // mở app xong: tải ngầm các màn hay xem để chuyển tab không phải chờ
+  if (NGAM_DA || !navigator.onLine || !DL) return; NGAM_DA = true;
+  setTimeout(function () { try { if (!document.getElementById('manTon').classList.contains('hien')) taiTon(true); } catch (e) { } }, 1500);
+  setTimeout(function () { try { if (document.getElementById('tabDuyet').style.display !== 'none' && !document.getElementById('manDuyet').classList.contains('hien')) taiChoDuyet(true); } catch (e) { } }, 3000);
+}
 var taiTimer = null, taiBatDau = 0;
 function tai(b, chu) {                                   // v1.2: hiện số giây đã chờ để người dùng biết app vẫn đang chạy
   document.getElementById('tai').classList.toggle('hien', !!b);
@@ -585,10 +610,10 @@ window.addEventListener('load', function () {
   var p = docPhien();
   if (!p || !p.token) { hienLogin(''); return; }
   TOKEN = p.token;
-  if (p.dl) { batDau(p.dl); }                                   // hiện ngay bản đã lưu
+  if (p.dl) { batDau(p.dl); taiNgam(); }                        // hiện ngay bản đã lưu · v1.11: tải ngầm các màn khác
   if (!navigator.onLine) { if (!p.dl) hienLogin('Không có mạng. Lần đăng nhập đầu tiên phải có kết nối.'); return; }
   tai(!p.dl, 'Đang tải dữ liệu kho…');
-  api('khoiTao', { dm_ver: p.dl && p.dl.dm_ver || '' }, 90).then(function (kq) { tai(false); batDau(kq); luuPhien(DL); })
+  api('khoiTao', { dm_ver: p.dl && p.dl.dm_ver || '' }, 90).then(function (kq) { tai(false); batDau(kq); luuPhien(DL); taiNgam(); })
     .catch(function (e) { tai(false); if (!p.dl) hienLogin(e.message); });   // lỗi TOKEN đã được api() xử lý
 });
 function dangNhap() {
@@ -603,18 +628,18 @@ function dangNhap() {
     try { localStorage.setItem('kho_email', email); } catch (e) { }
     document.getElementById('lgPin').value = ''; document.getElementById('lgLoi').style.display = 'none';
     luuPhien(kq);
-    batDau(kq);
+    batDau(kq); taiNgam();
   }).catch(function (e) { tai(false); nut.disabled = false; var el = document.getElementById('lgLoi'); el.style.display = 'block'; el.textContent = e.message; });
 }
 function dangXuat() {
   if (!confirm('Đăng xuất khỏi app kho trên máy này?')) return;
-  xoaPhien(); OCR = null; xtDong = []; hienLogin('');
+  xoaMay(); xoaPhien(); OCR = null; xtDong = []; hienLogin('');
 }
 /* nhận dữ liệu khởi tạo (từ đăng nhập, từ bản lưu hoặc từ khoiTao) → dựng giao diện */
 function batDau(kq) {
     if (!kq.vat_tu && DL && DL.vat_tu) kq.vat_tu = DL.vat_tu;             // v1.2: máy chủ không gửi lại danh mục vì chưa đổi
     if (!kq.vat_tu) kq.vat_tu = [];
-    DL = kq;
+    DL = kq; docMay();                                                    // v1.11: nạp bộ nhớ màn hình của tài khoản này
     document.getElementById('topUser').textContent = (kq.user.ho_ten || kq.user.email) + ' · ' + kq.user.ma_da;
     document.getElementById('tieuDe').textContent = 'Kho ' + kq.user.ma_da;
     var optKho = kq.user.khos.map(function (k) { return '<option value="' + esc(k.ma_kho) + '">' + esc(k.ten_kho || k.ma_kho) + '</option>'; }).join('');
@@ -966,17 +991,16 @@ function guiXuatTay() {
 }
 
 /* ================= tổng quan hàng thuê (v1.4) ================= */
-var HT_CACHE = {};                                       // ma_da → kết quả hangThue (mở tab hiện ngay, tải mới ngầm)
 function soVn(x) { return (Math.round((Number(x) || 0) * 1000) / 1000).toLocaleString('vi-VN'); }
 function taiHangThue() {
   var da = document.getElementById('tqDuAn').value; if (!da) return;
   var cu = HT_CACHE[da];
   if (cu) { veHangThue(cu, true); } else tai(true, 'Đang tổng hợp hàng thuê từ phiếu đã duyệt…');
   api('hangThue', { ma_da: da }, 90).then(function (kq) {
-    tai(false); HT_CACHE[da] = kq;
+    tai(false); var doi = daDoi(cu, kq); HT_CACHE[da] = kq; luuMay();
     if (document.getElementById('tqDuAn').value !== da) return;
-    veHangThue(kq, false);
-  }).catch(function (e) { tai(false); if (!cu) bao(e.message); });
+    if (doi) veHangThue(kq, false); else document.getElementById('tqLuc').textContent = document.getElementById('tqLuc').textContent.replace(' · đang làm mới…', '').replace(/^Tính lúc [^·]+/, 'Tính lúc ' + kq.luc + ' ');   // v1.11: số không đổi → chỉ cập nhật giờ
+  }).catch(function (e) { tai(false); if (!cu) bao(e.message); else document.getElementById('tqLuc').textContent = document.getElementById('tqLuc').textContent.replace(' · đang làm mới…', ' · ⚠ chưa làm mới được (' + e.message + ')'); });
 }
 function veDonut(pctTra) {                               // SVG vòng tròn: xanh = đã trả, cam = chưa trả; giữa = % chưa trả
   var r = 40, C = 2 * Math.PI * r, tra = Math.max(0, Math.min(100, pctTra || 0)), chua = 100 - tra;
@@ -1017,7 +1041,7 @@ function moChiTietHangThue(i) {
 }
 
 /* ================= chi phí thuê theo ngày (v1.8) ================= */
-var CP_CACHE = {}, TQ_KHOI = 'HT';
+var TQ_KHOI = 'HT';
 var CP_MAU = ['#0B4F9C', '#E67E22', '#2E8B57', '#8E44AD', '#C0392B', '#16A085', '#7F8C8D', '#D4AC0D'];
 try { TQ_KHOI = localStorage.getItem('tq_khoi') === 'CP' ? 'CP' : 'HT'; } catch (e) { }
 function tienVn(x) {                                     // 1234567 → "1,23 tr" · 1234567890 → "1,23 tỷ" · 12345 → "12.345"
@@ -1043,10 +1067,10 @@ function taiChiPhi() {
   var cu = CP_CACHE[da];
   if (cu) veChiPhi(cu, true); else if (TQ_KHOI === 'CP') tai(true, 'Đang tính chi phí thuê theo ngày…');
   api('chiPhiThue', { ma_da: da }, 90).then(function (kq) {
-    tai(false); CP_CACHE[da] = kq;
+    tai(false); var doi = daDoi(cu, kq); CP_CACHE[da] = kq; luuMay();
     if (document.getElementById('tqDuAn').value !== da) return;
-    veChiPhi(kq, false);
-  }).catch(function (e) { tai(false); document.getElementById('tqCpChu').textContent = '⚠ ' + e.message; if (!cu && TQ_KHOI === 'CP') bao(e.message); });
+    if (doi) veChiPhi(kq, false); else document.getElementById('cpLuc').textContent = document.getElementById('cpLuc').textContent.replace(' · đang làm mới…', '').replace(/^Tính lúc [^·]+/, 'Tính lúc ' + kq.luc + ' ');   // v1.11
+  }).catch(function (e) { tai(false); if (!cu) { document.getElementById('tqCpChu').textContent = '⚠ ' + e.message; if (TQ_KHOI === 'CP') bao(e.message); } else document.getElementById('cpLuc').textContent = document.getElementById('cpLuc').textContent.replace(' · đang làm mới…', ' · ⚠ chưa làm mới được'); });
 }
 function veChiPhi(kq, dangLamMoi) {
   var t = kq.tong || { luy_ke: 0, moi_ngay: 0, den_bu: 0 }, ncc = kq.ncc || [], coTien = ncc.filter(function (n) { return n.luy_ke > 0 || n.moi_ngay > 0 || (n.van_chuyen && n.van_chuyen.tong > 0); });
@@ -1199,7 +1223,7 @@ function guiChuyenXe() {
 }
 
 /* ================= phiếu đề nghị vật tư (v1.5) ================= */
-var PDN_CACHE = {}, DN_LOC = 'MO', DN_CT = null, LD = { so_pdn: '', dong: [] }, BC_TT = '';
+var DN_LOC = 'MO', DN_CT = null, LD = { so_pdn: '', dong: [] }, BC_TT = '';
 var PDN_TEN = { LAP: 'Kế toán kho lập (nháp)', CHO_CHT: 'Chờ Chỉ huy trưởng duyệt', CHT_DUYET: 'CHT đã duyệt', DA_GUI_CTY: 'Đã gửi P. Đấu thầu & Quản lý thi công', DA_DUYET: 'Ban Tổng giám đốc đã duyệt',
   DA_CHON_NCC: 'P. KTKH / P. Cơ giới đã chọn nhà cung cấp', DA_DAT: 'NCC tiếp nhận đơn, hẹn ngày cấp hàng', DANG_GIAO: 'NCC đang cấp hàng về công trường', DA_NHAP_MOT_PHAN: 'Thủ kho đã nhập một phần — chưa đủ',
   YEU_CAU_CAP_DU: 'Đã báo CHT — yêu cầu P. KTKH / Cơ giới cấp đủ', HOAN_THANH: 'Hoàn thành — nhận đủ 100 %', HUY: 'Đã hủy' };
@@ -1221,7 +1245,7 @@ function taiDeNghi(chiDem) {                            // chiDem: chỉ cập n
   document.getElementById('dnDuAn').value = da;
   var cu = PDN_CACHE[da];
   if (cu) veDeNghi(cu, chiDem); else if (!chiDem) tai(true, 'Đang tải phiếu đề nghị…');
-  api('deNghiDs', { ma_da: da }, 60).then(function (kq) { tai(false); PDN_CACHE[da] = kq; if (maDaTq() === da) veDeNghi(kq, chiDem); })
+  api('deNghiDs', { ma_da: da }, 60).then(function (kq) { tai(false); var doi = daDoi(cu, kq); PDN_CACHE[da] = kq; luuMay(); if (maDaTq() === da && (doi || chiDem)) veDeNghi(kq, chiDem); })
     .catch(function (e) { tai(false); if (!cu && !chiDem) bao(e.message); else if (!cu) document.getElementById('tqDnChu').textContent = '⚠ ' + e.message; });
 }
 function veDeNghi(kq, chiDem) {
@@ -1455,20 +1479,19 @@ function nhapDeNghiExcel(ev) {
 }
 
 /* ================= tồn kho ================= */
-var TON_CACHE = {};                                      // v1.2: nhớ tồn từng kho trong phiên → mở tab hiện ngay, tải mới ngầm
-function taiTon() {
+function taiTon(ngam) {                                  // v1.2: nhớ tồn từng kho → mở tab hiện ngay, tải mới ngầm · v1.11: lưu trên máy, ngam = tải trước không hiện vòng chờ
   var kho = document.getElementById('tonKho').value; if (!kho) return;
   var cu = TON_CACHE[kho];
   if (cu) { tonRows = cu.rows; document.getElementById('tonLuc').textContent = 'Tính lúc ' + cu.luc + ' · ' + cu.tong + ' mã · đang làm mới…'; locTon(); }
-  else tai(true, 'Đang tính tồn từ chứng từ đã duyệt…');
+  else if (!ngam) tai(true, 'Đang tính tồn từ chứng từ đã duyệt…');
   api('tonKho', { ma_kho: kho }, 90).then(function (kq) {
     tai(false);
-    TON_CACHE[kho] = kq;
+    var doi = daDoi(cu, kq); TON_CACHE[kho] = kq; luuMay();
     if (document.getElementById('tonKho').value !== kho) return;
     tonRows = kq.rows;
     document.getElementById('tonLuc').textContent = 'Tính lúc ' + kq.luc + ' · ' + kq.tong + ' mã có phát sinh';
-    locTon();
-  }).catch(function (e) { tai(false); if (!cu) bao(e.message); });
+    if (doi || !cu) locTon();
+  }).catch(function (e) { tai(false); if (!cu && !ngam) bao(e.message); else if (cu) document.getElementById('tonLuc').textContent = 'Tính lúc ' + cu.luc + ' · ' + cu.tong + ' mã · ⚠ chưa làm mới được'; });
 }
 function locTon() {
   var q = boDau(document.getElementById('tonTim').value);
@@ -1481,17 +1504,17 @@ function locTon() {
 }
 
 /* ================= duyệt ================= */
-var DUYET_CACHE = null;
 function lamMoiDanhMuc() {                                 // v1.2.1: người duyệt vừa sửa VAT_TU / danh mục app báo cáo → làm nóng cache máy chủ rồi tải lại
   tai(true, 'Đang làm mới danh mục trên máy chủ (10–20 s)…');
   api('lamMoiCache', {}, 120).then(function () { return api('khoiTao', { dm_ver: '' }, 90); })
     .then(function (kq) { tai(false); batDau(kq); luuPhien(DL); bao('Đã làm mới: ' + (kq.vat_tu ? kq.vat_tu.length : 0) + ' mã vật tư · ' + (kq.so_dau_viec_mo || 0) + ' việc đang mở'); })
     .catch(function (e) { tai(false); bao(e.message); });
 }
-function taiChoDuyet() {
-  if (DUYET_CACHE) veChoDuyet(DUYET_CACHE, true); else tai(true, 'Đang tải danh sách…');
-  api('choDuyet', {}).then(function (kq) { tai(false); DUYET_CACHE = kq; veChoDuyet(kq, false); })
-    .catch(function (e) { tai(false); if (!DUYET_CACHE) bao(e.message); });
+function taiChoDuyet(ngam) {                             // v1.11: lưu trên máy; ngam = tải trước khi mở app
+  var cu = DUYET_CACHE;
+  if (cu) { if (!ngam) veChoDuyet(cu, true); } else if (!ngam) tai(true, 'Đang tải danh sách…');
+  api('choDuyet', {}).then(function (kq) { tai(false); DUYET_CACHE = kq; luuMay(); if (!ngam || document.getElementById('manDuyet').classList.contains('hien')) veChoDuyet(kq, false); })
+    .catch(function (e) { tai(false); if (!cu && !ngam) bao(e.message); else if (cu && !ngam) document.getElementById('duyetDem').textContent = document.getElementById('duyetDem').textContent.replace(' · đang làm mới…', ' · ⚠ chưa làm mới được'); });
 }
 function veChoDuyet(kq, dangLamMoi) {
     function ve(list, idEl, laKiemMau) {
