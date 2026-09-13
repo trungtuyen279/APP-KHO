@@ -1,0 +1,67 @@
+# Đóng gói app KHO (PWA trên GitHub Pages) thành APK Android bằng Bubblewrap (Trusted Web Activity).
+# Chạy: tab Actions → "Build APK" → Run workflow → nhập version_name (vd 1.11.0) → Run.
+# Kết quả: mục Releases có tag apk-v<version>-<số lần chạy> kèm file .apk (cài trực tiếp) và .aab (nếu sau này đưa lên Google Play).
+# Cần 3 secret trong Settings → Secrets and variables → Actions: KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_PASSWORD.
+name: Build APK
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: "Phiên bản hiển thị (trùng phiên bản index.html, vd 1.11.0)"
+        required: true
+        default: "1.11.0"
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - name: Cài Bubblewrap
+        run: npm install -g @bubblewrap/cli
+      - name: Cấu hình Bubblewrap dùng JDK / Android SDK có sẵn trên máy chạy
+        run: |
+          mkdir -p ~/.bubblewrap
+          echo "{\"jdkPath\": \"$JAVA_HOME\", \"androidSdkPath\": \"$ANDROID_HOME\"}" > ~/.bubblewrap/config.json
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+      - name: Ghi khóa ký từ secret
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > appkho-release.keystore
+      - name: Đặt phiên bản (versionCode = số lần chạy, versionName = nhập tay)
+        run: |
+          jq --arg v "${{ github.event.inputs.version_name }}" --argjson c "${{ github.run_number }}" \
+             '.appVersionName = $v | .appVersion = $v | .appVersionCode = $c' twa-manifest.json > tmp.json && mv tmp.json twa-manifest.json
+          cat twa-manifest.json
+      - name: Kiểm tra assetlinks.json đang phục vụ trên GitHub Pages
+        run: |
+          curl -fsS https://trungtuyen279.github.io/APP-KHO/.well-known/assetlinks.json && echo || echo "::warning::Chưa thấy .well-known/assetlinks.json trên Pages — app cài được nhưng sẽ hiện thanh địa chỉ"
+      - name: Sinh dự án Android từ twa-manifest.json rồi build (Bubblewrap)
+        env:
+          BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          bubblewrap update --skipVersionUpgrade --manifest twa-manifest.json
+          bubblewrap build --skipPwaValidation --manifest twa-manifest.json
+      - name: Đổi tên file
+        run: |
+          V="${{ github.event.inputs.version_name }}"; N="${{ github.run_number }}"
+          mv app-release-signed.apk "Kho_LICOGI13FC_v${V}_${N}.apk"
+          [ -f app-release-bundle.aab ] && mv app-release-bundle.aab "Kho_LICOGI13FC_v${V}_${N}.aab" || true
+          ls -la *.apk *.aab 2>/dev/null
+      - uses: actions/upload-artifact@v4
+        with: { name: apk, path: "Kho_LICOGI13FC_*.apk" }
+      - name: Tạo Release kèm file APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-v${{ github.event.inputs.version_name }}-${{ github.run_number }}
+          name: App Kho LICOGI13FC v${{ github.event.inputs.version_name }} (bản đóng gói ${{ github.run_number }})
+          body: "APK cài trực tiếp cho Android 5.0+. Mở file .apk trên điện thoại → Cài đặt (cho phép cài từ nguồn không xác định nếu máy hỏi). Cùng khóa ký với các bản trước nên cài đè được."
+          files: |
+            Kho_LICOGI13FC_*.apk
+            Kho_LICOGI13FC_*.aab
+      - name: Xóa khóa ký khỏi máy chạy
+        if: always()
+        run: rm -f appkho-release.keystore
