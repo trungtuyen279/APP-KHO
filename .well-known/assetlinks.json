@@ -1,0 +1,5 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": { "namespace": "android_app", "package_name": "vn.licogi13fc.appkho",
+    "sha256_cert_fingerprints": ["5E:51:52:44:13:6F:EF:B8:AA:43:14:B0:AD:03:F1:8B:4F:F1:E7:F3:1F:05:37:9C:DD:CD:ED:3A:A3:E1:EA:DF"] }
+}]
