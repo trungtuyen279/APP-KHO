@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.11.0 (GitHub Pages) · 12/09/2026
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.12.0 (GitHub Pages) · 13/09/2026
+  v1.12.0 (anh yêu cầu 13/09): VẬT LIỆU CHÍNH — thẻ thứ 4 ở Tổng quan, CHỈ tài khoản vai_tro = ADMIN mới thấy nút và gọi được API
+    (máy chủ chặn lại lần nữa). Đối chiếu khối lượng đã nhập với khối lượng tổng trong phương án giao khoán (sheet KE_HOACH_VL của
+    từng công trình): thanh % từng khoản mục, màu xanh < 90%, cam ≥ 90% (chú ý), đỏ ≥ 100% (vượt); lọc Tất cả / Cần chú ý / Nhập tay /
+    Chưa gán mã. Khoản không đi qua kho (bê tông tươi, ván khuôn, sơn bả) có nút 'Cập nhật số đã dùng' ghi thẳng vào sheet.
+    Cần Code.gs v0.17.0 + OCR.gs v1.6.2.
   v1.11.0 (anh yêu cầu 12/09 tối — mở app không phải đợi): DỮ LIỆU MÀN HÌNH LƯU TRÊN MÁY. Hàng thuê, chi phí thuê, tồn kho, phiếu đề nghị,
     danh sách chờ duyệt được lưu localStorage theo từng tài khoản (khóa kho_may_<email>); mở app hiện NGAY số lần trước (kèm "Tính lúc …"),
     rồi tải mới ngầm; số có đổi mới vẽ lại (so JSON bỏ trường luc). Mở app xong tự tải ngầm Tồn kho + Chờ duyệt để chuyển tab không chờ.
@@ -203,6 +208,20 @@
     #inPhieu th{text-align:center;background:none} #inPhieu .c{text-align:center} #inPhieu .r{text-align:right} #inPhieu .b{font-weight:700}
     #inPhieu .kt{height:80px;vertical-align:bottom;text-align:center;font-weight:700;padding-bottom:6px} #inPhieu .ngay{text-align:center;font-style:italic}
     #inPhieu .bm{text-align:right;font-style:italic;font-size:11px} }
+  /* v1.12: bảng vật liệu chính (chỉ ADMIN) */
+  .vl-loc{display:flex;gap:6px;margin:8px 0 4px;flex-wrap:wrap}
+  .vl-loc button{flex:1;min-width:76px;padding:6px 8px;font-size:12px;border:1px solid var(--vien);border-radius:8px;background:#fff;color:#333}
+  .vl-loc button.chon{background:var(--do);border-color:var(--do);color:#fff;font-weight:600}
+  .vl-d{background:#fff;border:1px solid var(--vien);border-radius:10px;padding:9px 10px;margin-top:8px;border-left-width:4px}
+  .vl-d.VUOT{border-left-color:#c00000} .vl-d.CHU_Y{border-left-color:#e08e0b} .vl-d.OK{border-left-color:#2e7d32} .vl-d.CHUA_NHAP{border-left-color:#bbb}
+  .vl-d .h{display:flex;align-items:flex-start;gap:8px}
+  .vl-d .h b{flex:1;font-size:13.5px;line-height:1.35} .vl-d .h .pc{flex:none;font-size:15px;font-weight:700}
+  .vl-d.VUOT .pc{color:#c00000} .vl-d.CHU_Y .pc{color:#e08e0b} .vl-d.OK .pc{color:#2e7d32} .vl-d.CHUA_NHAP .pc{color:#888}
+  .vl-d .thanh{height:7px;border-radius:4px;background:#eee;margin:6px 0 5px;overflow:hidden}
+  .vl-d .thanh i{display:block;height:100%;border-radius:4px}
+  .vl-d.VUOT .thanh i{background:#c00000} .vl-d.CHU_Y .thanh i{background:#e08e0b} .vl-d.OK .thanh i{background:#2e7d32} .vl-d.CHUA_NHAP .thanh i{background:#ccc}
+  .vl-d small{color:#555;font-size:11.5px;display:block;line-height:1.5}
+  .vl-d .sua{margin-top:6px;padding:5px 10px;font-size:12px;border:1px solid var(--do);border-radius:8px;background:#fff;color:var(--do);font-weight:600}
 </style>
 </head>
 <body>
@@ -238,6 +257,16 @@
     <button class="tq-nut" id="tqNutDN" onclick="moDeNghi()"><span class="ic">📋</span><b>Đề nghị VT</b><small id="tqDnChu">Đang tải…</small><span class="dem" id="tqDnDem" style="display:none"></span></button>
     <button class="tq-nut chon" id="tqNutHT" onclick="chonKhoiTq('HT')"><span class="ic">🔄</span><b>Hàng thuê</b><small id="tqHtChu">Đang tải…</small></button>
     <button class="tq-nut" id="tqNutCP" onclick="chonKhoiTq('CP')"><span class="ic">💰</span><b>Chi phí thuê</b><small id="tqCpChu">Đang tải…</small><span class="dem" id="tqCpDem" style="display:none"></span></button>
+    <button class="tq-nut" id="tqNutVL" style="display:none" onclick="chonKhoiTq('VL')"><span class="ic">📦</span><b>Vật liệu chính</b><small id="tqVlChu">Đang tải…</small><span class="dem" id="tqVlDem" style="display:none"></span></button>
+  </div>
+  <!-- 3c. Vật liệu chính — % đã nhập so với khối lượng giao khoán (v1.12, chỉ ADMIN) -->
+  <div class="the" id="tqKhoiVatLieu" style="display:none">
+    <h3 style="font-size:14px;margin:0 0 8px">Vật liệu chính — đã nhập tới đâu</h3>
+    <div class="tq-tong" id="vlTong"></div>
+    <div class="nho-mo" id="vlLuc" style="margin-top:6px"></div>
+    <div class="vl-loc" id="vlLoc"></div>
+    <div id="vlDs"></div>
+    <div id="vlCanh"></div>
   </div>
   <!-- 3b. Chi phí thuê theo ngày (v1.8) -->
   <div class="the" id="tqKhoiChiPhi" style="display:none">
@@ -547,17 +576,18 @@ function luuPhien(kq) { try { localStorage.setItem('kho_phien', JSON.stringify({
 function docPhien() { try { return JSON.parse(localStorage.getItem('kho_phien') || 'null'); } catch (e) { return null; } }
 function xoaPhien() { TOKEN = ''; DL = null; try { localStorage.removeItem('kho_phien'); } catch (e) { } }
 /* v1.11: bộ nhớ màn hình trên máy — mở app hiện ngay số lần trước, tải mới ngầm, chỉ vẽ lại khi số đổi */
-var HT_CACHE = {}, CP_CACHE = {}, TON_CACHE = {}, PDN_CACHE = {}, DUYET_CACHE = null, MAY_DA_DOC = false, NGAM_DA = false, luuMayHen = null;
+var HT_CACHE = {}, CP_CACHE = {}, TON_CACHE = {}, PDN_CACHE = {}, VL_CACHE = {}, DUYET_CACHE = null, MAY_DA_DOC = false, NGAM_DA = false, luuMayHen = null;
+var VL_LOC = 'TAT_CA';                                   // v1.12: bộ lọc bảng vật liệu chính
 function mayKhoa() { return 'kho_may_' + String((DL && DL.user && DL.user.email) || '').toLowerCase(); }
 function docMay() {
   if (MAY_DA_DOC || !DL) return; MAY_DA_DOC = true;
-  try { var m = JSON.parse(localStorage.getItem(mayKhoa()) || 'null'); if (m && m.ver === 1) { HT_CACHE = m.ht || {}; CP_CACHE = m.cp || {}; TON_CACHE = m.ton || {}; PDN_CACHE = m.pdn || {}; DUYET_CACHE = m.duyet || null; } } catch (e) { }
+  try { var m = JSON.parse(localStorage.getItem(mayKhoa()) || 'null'); if (m && m.ver === 1) { HT_CACHE = m.ht || {}; CP_CACHE = m.cp || {}; TON_CACHE = m.ton || {}; PDN_CACHE = m.pdn || {}; VL_CACHE = m.vl || {}; DUYET_CACHE = m.duyet || null; } } catch (e) { }
 }
 function luuMay() {                                        // gộp nhiều lần ghi trong 300 ms; đầy bộ nhớ thì bỏ qua (app vẫn chạy)
   clearTimeout(luuMayHen);
-  luuMayHen = setTimeout(function () { try { if (DL) localStorage.setItem(mayKhoa(), JSON.stringify({ ver: 1, luc: Date.now(), ht: HT_CACHE, cp: CP_CACHE, ton: TON_CACHE, pdn: PDN_CACHE, duyet: DUYET_CACHE })); } catch (e) { } }, 300);
+  luuMayHen = setTimeout(function () { try { if (DL) localStorage.setItem(mayKhoa(), JSON.stringify({ ver: 1, luc: Date.now(), ht: HT_CACHE, cp: CP_CACHE, ton: TON_CACHE, pdn: PDN_CACHE, vl: VL_CACHE, duyet: DUYET_CACHE })); } catch (e) { } }, 300);
 }
-function xoaMay() { try { localStorage.removeItem(mayKhoa()); } catch (e) { } HT_CACHE = {}; CP_CACHE = {}; TON_CACHE = {}; PDN_CACHE = {}; DUYET_CACHE = null; MAY_DA_DOC = false; NGAM_DA = false; }
+function xoaMay() { try { localStorage.removeItem(mayKhoa()); } catch (e) { } HT_CACHE = {}; CP_CACHE = {}; TON_CACHE = {}; PDN_CACHE = {}; VL_CACHE = {}; DUYET_CACHE = null; MAY_DA_DOC = false; NGAM_DA = false; }
 function daDoi(cu, moi) {                                  // so dữ liệu bỏ trường thời điểm tính / cờ cache
   function s(x) { return JSON.stringify(x, function (k, v) { return (k === 'luc' || k === 'tu_cache' || k === 'ms') ? undefined : v; }); }
   return !cu || s(cu) !== s(moi);
@@ -659,6 +689,7 @@ function batDau(kq) {
     document.getElementById('dnDuAn').value = selDa.value;
     if (!DV_CHON) capNhatDauViec(kq);                                 // tải ngầm không xóa đầu việc đang chọn
     document.getElementById('tabDuyet').style.display = ['KE_TOAN_KHO', 'CHT', 'PCH', 'ADMIN'].indexOf(kq.user.vai_tro) >= 0 ? '' : 'none';
+    document.getElementById('tqNutVL').style.display = laAdmin() ? '' : 'none';   // v1.12: bảng vật liệu chính chỉ ADMIN thấy
     document.getElementById('thanhTab').style.display = 'flex';
     document.getElementById('btnThoat').style.display = '';
     var manHienTai = document.querySelector('.man.hien');
@@ -1053,14 +1084,18 @@ function tienVn(x) {                                     // 1234567 → "1,23 tr
 function dongVn(x) { return Math.round(Number(x) || 0).toLocaleString('vi-VN'); }
 function ngaySo(vn) { var m = String(vn || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m ? Math.round(Date.UTC(+m[3], +m[2] - 1, +m[1]) / 864e5) : null; }
 function apDungKhoiTq() {                               // nút nào đang chọn thì hiện khối đó
-  var k = TQ_KHOI;
+  var k = TQ_KHOI; if (k === 'VL' && !laAdmin()) k = TQ_KHOI = 'HT';          // v1.12: không phải ADMIN thì không mở được khối vật liệu
   document.getElementById('tqNutHT').classList.toggle('chon', k === 'HT'); document.getElementById('tqNutCP').classList.toggle('chon', k === 'CP');
+  document.getElementById('tqNutVL').classList.toggle('chon', k === 'VL');
   document.getElementById('tqKhoiThue').style.display = k === 'HT' ? '' : 'none'; document.getElementById('tqKhoiChiPhi').style.display = k === 'CP' ? '' : 'none';
+  document.getElementById('tqKhoiVatLieu').style.display = k === 'VL' ? '' : 'none';
 }
 function chonKhoiTq(k) {
+  if (k === 'VL' && !laAdmin()) return;
   TQ_KHOI = k; try { localStorage.setItem('tq_khoi', k); } catch (e) { }
   apDungKhoiTq();
   if (k === 'CP' && !CP_CACHE[maDaTq()]) taiChiPhi();
+  if (k === 'VL' && !VL_CACHE[maDaTq()]) taiVatLieu();
 }
 function taiChiPhi() {
   var da = document.getElementById('tqDuAn').value; if (!da) return;
@@ -1071,6 +1106,86 @@ function taiChiPhi() {
     if (document.getElementById('tqDuAn').value !== da) return;
     if (doi) veChiPhi(kq, false); else document.getElementById('cpLuc').textContent = document.getElementById('cpLuc').textContent.replace(' · đang làm mới…', '').replace(/^Tính lúc [^·]+/, 'Tính lúc ' + kq.luc + ' ');   // v1.11
   }).catch(function (e) { tai(false); if (!cu) { document.getElementById('tqCpChu').textContent = '⚠ ' + e.message; if (TQ_KHOI === 'CP') bao(e.message); } else document.getElementById('cpLuc').textContent = document.getElementById('cpLuc').textContent.replace(' · đang làm mới…', ' · ⚠ chưa làm mới được'); });
+}
+/* ---- v1.12: VẬT LIỆU CHÍNH (chỉ ADMIN) — % đã nhập so với khối lượng giao khoán ---- */
+function laAdmin() { return !!(DL && DL.user && String(DL.user.vai_tro || '').toUpperCase() === 'ADMIN'); }
+function taiVatLieu() {
+  if (!laAdmin()) return;
+  var da = document.getElementById('tqDuAn').value; if (!da) return;
+  var cu = VL_CACHE[da];
+  if (cu) veVatLieu(cu, true); else if (TQ_KHOI === 'VL') tai(true, 'Đang đối chiếu vật liệu chính…');
+  api('vatLieu', { ma_da: da }, 90).then(function (kq) {
+    tai(false); var doi = daDoi(cu, kq); VL_CACHE[da] = kq; luuMay();
+    if (document.getElementById('tqDuAn').value !== da) return;
+    if (doi) veVatLieu(kq, false); else document.getElementById('vlLuc').textContent = document.getElementById('vlLuc').textContent.replace(' · đang làm mới…', '');
+  }).catch(function (e) {
+    tai(false);
+    if (!cu) { document.getElementById('tqVlChu').textContent = '⚠ ' + e.message; if (TQ_KHOI === 'VL') bao(e.message); }
+    else document.getElementById('vlLuc').textContent = document.getElementById('vlLuc').textContent.replace(' · đang làm mới…', ' · ⚠ chưa làm mới được');
+  });
+}
+function vlLocDs(rows) {
+  if (VL_LOC === 'CANH_BAO') return rows.filter(function (r) { return r.trang_thai === 'VUOT' || r.trang_thai === 'CHU_Y'; });
+  if (VL_LOC === 'TAY') return rows.filter(function (r) { return r.nguon === 'TAY'; });
+  if (VL_LOC === 'THIEU_MA') return rows.filter(function (r) { return r.thieu_ma; });
+  return rows;
+}
+function vlChonLoc(k) { VL_LOC = k; var kq = VL_CACHE[maDaTq()]; if (kq) veVatLieu(kq, false); }
+function veVatLieu(kq, dangLamMoi) {
+  var t = kq.tong, rows = kq.rows || [];
+  var canhBao = rows.filter(function (r) { return r.trang_thai === 'VUOT' || r.trang_thai === 'CHU_Y'; }).length;
+  document.getElementById('tqVlChu').textContent = !kq.co_bang ? 'chưa có bảng kế hoạch'
+    : (canhBao ? canhBao + ' loại cần chú ý' : 'trong định mức') + ' · ' + (t ? t.pct_tien : 0) + '%';
+  var dem = document.getElementById('tqVlDem'); dem.style.display = t && t.so_vuot ? '' : 'none'; dem.textContent = t && t.so_vuot ? t.so_vuot + ' vượt' : '';
+  if (!kq.co_bang) {
+    document.getElementById('vlTong').innerHTML = ''; document.getElementById('vlLoc').innerHTML = ''; document.getElementById('vlCanh').innerHTML = '';
+    document.getElementById('vlLuc').textContent = '';
+    document.getElementById('vlDs').innerHTML = '<div class="the" style="margin:8px 0 0"><b>Công trình này chưa có bảng khối lượng vật liệu.</b><div class="nho-mo" style="margin-top:6px">Cần sheet <b>KE_HOACH_VL</b> trong file CSDL của công trình (nạp từ bảng giao khoán).</div></div>';
+    return;
+  }
+  document.getElementById('vlTong').innerHTML =
+    '<div><small>Giá trị kế hoạch</small><b>' + tienVn(t.gia_tri_kh) + '</b></div>' +
+    '<div><small>Đã nhập</small><b style="color:var(--do)">' + tienVn(t.gia_tri_da) + '</b></div>' +
+    '<div><small>Tỷ lệ theo tiền</small><b>' + t.pct_tien + '%</b></div>';
+  document.getElementById('vlLuc').textContent = 'Tính lúc ' + kq.luc + ' · ' + t.so_dong + ' khoản mục · ' + t.so_vuot + ' vượt · ' + t.so_chu_y + ' chú ý (từ ' + (kq.nguong || 90) + '%) · '
+    + t.so_tay + ' khoản nhập tay' + (t.so_thieu_ma ? ' · ' + t.so_thieu_ma + ' chưa gán mã vật tư' : '') + ' · đơn vị đồng, chưa VAT' + (dangLamMoi ? ' · đang làm mới…' : '');
+  var loc = [['TAT_CA', 'Tất cả (' + rows.length + ')'], ['CANH_BAO', 'Cần chú ý (' + canhBao + ')'], ['TAY', 'Nhập tay (' + t.so_tay + ')']];
+  if (t.so_thieu_ma) loc.push(['THIEU_MA', 'Chưa gán mã (' + t.so_thieu_ma + ')']);
+  document.getElementById('vlLoc').innerHTML = loc.map(function (x) {
+    return '<button class="' + (VL_LOC === x[0] ? 'chon' : '') + '" onclick="vlChonLoc(\'' + x[0] + '\')">' + esc(x[1]) + '</button>';
+  }).join('');
+  var ds = vlLocDs(rows);
+  document.getElementById('vlDs').innerHTML = !ds.length
+    ? '<div class="nho-mo" style="text-align:center;padding:14px 0">Không có khoản mục nào trong mục này.</div>'
+    : ds.map(function (r) {
+      var rong = Math.max(0, Math.min(100, r.pct));
+      var conChu = r.con >= 0 ? 'còn ' + soVn(r.con) : 'VƯỢT ' + soVn(-r.con);
+      return '<div class="vl-d ' + r.trang_thai + '">' +
+        '<div class="h"><b>' + esc(r.ten_vl) + '</b><span class="pc">' + (r.kl ? r.pct + '%' : '—') + '</span></div>' +
+        '<div class="thanh"><i style="width:' + rong + '%"></i></div>' +
+        '<small>Đã nhập <b>' + soVn(r.da) + '</b> / ' + soVn(r.kl) + ' ' + esc(r.don_vi) + ' · ' + conChu + ' · ' + tienVn(r.gia_tri_da) + ' / ' + tienVn(r.gia_tri_kh) + '</small>' +
+        '<small>' + (r.nhom ? esc(r.nhom) + ' · ' : '') + (r.nguon === 'TAY'
+          ? 'nhập tay' + (r.ngay_tay ? ' · cập nhật ' + esc(r.ngay_tay) : ' · chưa cập nhật lần nào')
+          : (r.thieu_ma ? '<span style="color:var(--do)">chưa gán mã vật tư — số liệu chưa cộng được</span>' : 'tự động từ ' + r.so_ma + ' mã vật tư')) + '</small>' +
+        (r.nguon === 'TAY' ? '<button class="sua" onclick="vlSua(' + r._row + ')">Cập nhật số đã dùng</button>' : '') +
+        '</div>';
+    }).join('');
+  var canh = '';
+  if ((kq.canh_bao || []).length) canh = '<div class="cp-canh" style="margin-top:10px"><b>Cần bổ sung khai báo:</b><br>' + kq.canh_bao.slice(0, 8).map(esc).join('<br>') + '</div>';
+  document.getElementById('vlCanh').innerHTML = canh;
+}
+function vlSua(row) {
+  var da = maDaTq(), kq = VL_CACHE[da]; if (!kq) return;
+  var r = (kq.rows || []).filter(function (x) { return x._row === row; })[0]; if (!r) return;
+  var v = prompt('Số đã dùng của "' + r.ten_vl + '" (' + r.don_vi + ')\nKế hoạch: ' + soVn(r.kl) + ' ' + r.don_vi, r.da || '');
+  if (v === null) return;
+  v = String(v).trim().replace(/\./g, '').replace(',', '.');
+  if (v === '' || isNaN(Number(v)) || Number(v) < 0) { bao('Số không hợp lệ.'); return; }
+  tai(true, 'Đang ghi số đã dùng…');
+  api('vatLieuTay', { ma_da: da, row: row, da_dung_tay: Number(v) }, 60).then(function (d) {
+    tai(false); bao(d.thong_bao || 'Đã ghi.');
+    delete VL_CACHE[da]; taiVatLieu();
+  }).catch(function (e) { tai(false); bao(e.message); });
 }
 function veChiPhi(kq, dangLamMoi) {
   var t = kq.tong || { luy_ke: 0, moi_ngay: 0, den_bu: 0 }, ncc = kq.ncc || [], coTien = ncc.filter(function (n) { return n.luy_ke > 0 || n.moi_ngay > 0 || (n.van_chuyen && n.van_chuyen.tong > 0); });
@@ -1236,7 +1351,7 @@ function maDaTq() { return document.getElementById('tqDuAn').value || (DL && DL.
 function doiDuAn(ma) {                                   // v1.6.3: 2 ô chọn công trình (Tổng quan + Đề nghị) luôn cùng giá trị
   document.getElementById('tqDuAn').value = ma; document.getElementById('dnDuAn').value = ma;
   if (document.getElementById('manDeNghi').classList.contains('hien')) taiDeNghi(false);
-  else { taiHangThue(); taiDeNghi(true); taiChiPhi(); }
+  else { taiHangThue(); taiDeNghi(true); taiChiPhi(); if (laAdmin()) taiVatLieu(); }
 }
 function khoCuaDuAn(ma) { return (DL.user.khos || []).filter(function (k) { return !k.ma_da || k.ma_da === ma; }); }
 function moDeNghi() { moTab('DeNghi'); }
