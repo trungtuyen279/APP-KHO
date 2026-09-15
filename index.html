@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.12.0 (GitHub Pages) · 13/09/2026
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.13.0 (GitHub Pages) · 15/09/2026
+  v1.13.0 (anh yêu cầu 15/09): CHỤP PHIẾU XUẤT VẬT TƯ GIẤY — nút 📤 Xuất vật tư cho tổ đội trong màn Chụp phiếu. Thủ kho chụp tờ phiếu
+    đã ký đủ (CHT/CBKT/Thủ kho/Người đề nghị) → AI đọc tổ đội, số phiếu giấy, ngày, từng dòng (tên · ĐVT · khối lượng · khu vực thi công)
+    → màn kiểm tra: chọn tổ đội nhận (danh sách tổ đội/thầu phụ), khu vực, phân khu, mã đầu việc KHÔNG bắt buộc; mỗi dòng hiện tồn kho
+    hiện tại và tô đỏ nếu xuất quá tồn → Gửi → PHIEU_XUAT chờ kế toán duyệt (luôn chờ, không tự duyệt). Màn duyệt hiện số phiếu giấy,
+    khu vực, chữ ký đã có. Tab Xuất kho (xuất tay) giữ nguyên. Cần OCR.gs v1.7.0.
   v1.12.0 (anh yêu cầu 13/09): VẬT LIỆU CHÍNH — thẻ thứ 4 ở Tổng quan, CHỈ tài khoản vai_tro = ADMIN mới thấy nút và gọi được API
     (máy chủ chặn lại lần nữa). Đối chiếu khối lượng đã nhập với khối lượng tổng trong phương án giao khoán (sheet KE_HOACH_VL của
     từng công trình): thanh % từng khoản mục, màu xanh < 90%, cam ≥ 90% (chú ý), đỏ ≥ 100% (vượt); lọc Tất cả / Cần chú ý / Nhập tay /
@@ -404,6 +409,7 @@
     <button class="nut" onclick="chup('NHAP')">📥 Nhập kho (mua)</button>
     <button class="nut" onclick="chup('NHAN_THUE')">📦 Nhận hàng thuê</button>
     <button class="nut phu" onclick="chup('TRA_THUE')">↩️ Trả hàng thuê</button>
+    <button class="nut" style="background:#0B4F9C" onclick="chup('XUAT')">📤 Xuất vật tư cho tổ đội (phiếu đã ký)</button>
     <input id="fileAnhChup" type="file" accept="image/*" capture="environment" style="display:none" onchange="anhDaChon(event)">
     <input id="fileAnhTai" type="file" accept="image/*" multiple style="display:none" onchange="anhDaChon(event)">
     <div class="nho-mo">Chụp thẳng, đủ sáng, lấy trọn khung phiếu — hoặc chọn ảnh phiếu đã có trong máy. Ảnh được nén trước khi gửi.</div>
@@ -415,12 +421,12 @@
   <img class="anh-phieu" id="ktAnh">
   <div id="ktCanhBao"></div>
   <div class="the">
-    <label>Đối tác (NCC / bên cho thuê) — trên phiếu: <b id="ktTenNcc"></b></label>
+    <label><span id="ktNhanDoiTac">Đối tác (NCC / bên cho thuê) — trên phiếu: </span><b id="ktTenNcc"></b></label>
     <select id="ktMaDt"></select>
     <div style="display:flex;gap:8px">
-      <div style="flex:1"><label>Số phiếu đối tác</label><input id="ktSoPhieu"></div>
-      <div style="flex:1"><label>Phiếu đề nghị (nếu có)</label><select id="ktSoPdn"></select></div>
-      <div style="flex:1"><label>Người giao</label><input id="ktNguoiGiao"></div>
+      <div style="flex:1"><label id="ktNhanSoPhieu">Số phiếu đối tác</label><input id="ktSoPhieu"></div>
+      <div style="flex:1" id="ktOSoPdn"><label>Phiếu đề nghị (nếu có)</label><select id="ktSoPdn"></select></div>
+      <div style="flex:1"><label id="ktNhanNguoiGiao">Người giao</label><input id="ktNguoiGiao"></div>
     </div>
   </div>
   <!-- v1.10: vận chuyển theo chuyến — chỉ phiếu Nhận / Trả hàng thuê -->
@@ -432,6 +438,17 @@
     <div style="display:flex;gap:8px"><div style="flex:2"><label>Thuê NCC cẩu hàng tại công trường</label><select id="ktVcLoaiCau"><option value="">Không</option></select></div><div style="flex:1"><label>Đêm lưu ca</label><input id="ktVcSoDem" type="number" min="0" step="1" value="0"></div></div>
     <label>Ghi chú xe (biển số…)</label><input id="ktVcGhiChu">
     <div class="nho-mo">Kế toán có thể sửa lại khi duyệt (kể cả số xe nếu 1 phiếu đi 2 xe).</div>
+  </div>
+  <!-- v1.13: phiếu xuất vật tư giấy — khu vực thi công, phân khu, đầu việc (không bắt buộc), chữ ký -->
+  <div class="the" id="ktKhoiXuat" style="display:none">
+    <h3 style="font-size:14px;margin:0 0 4px">📤 Xuất cho tổ đội — theo phiếu giấy đã ký</h3>
+    <div class="nho-mo" id="ktXuatChuKy" style="margin-bottom:6px"></div>
+    <label>Khu vực thi công (đọc từ phiếu, sửa được)</label><input id="ktKhuVuc" placeholder="VD: Tầng 3 tòa W1">
+    <div style="display:flex;gap:8px">
+      <div style="flex:1"><label>Phân khu</label><select id="ktPhanKhu"></select></div>
+      <div style="flex:1"><label>Mã đầu việc (không bắt buộc)</label><input id="ktMaViec" placeholder="VD: W1-T3-XT-01"></div>
+    </div>
+    <div class="nho-mo">Phiếu sẽ CHỜ KẾ TOÁN KHO DUYỆT rồi mới trừ tồn. Dòng đỏ "quá tồn" là xuất nhiều hơn tồn kho hiện tại — kiểm lại số hoặc phiếu nhập chưa duyệt.</div>
   </div>
   <div class="the" id="ktDong"></div>
   <button class="nut ok" onclick="guiPhieu()">Gửi phiếu</button>
@@ -541,7 +558,7 @@ var OCR = null;         // kết quả ocrPhieu đang kiểm tra
 var loaiDangChup = ''; var dongDangChon = -1; var xtDong = []; var tonRows = [];
 var DV_CHON = null; var dvTimer = null; var maDaXuat = '';
 var THIET_BI = navigator.userAgent.slice(0, 80);
-var TEN_LOAI = { NHAP: 'Nhập kho (mua)', NHAN_THUE: 'Nhận hàng thuê', TRA_THUE: 'Trả hàng thuê' };
+var TEN_LOAI = { NHAP: 'Nhập kho (mua)', NHAN_THUE: 'Nhận hàng thuê', TRA_THUE: 'Trả hàng thuê', XUAT: 'Xuất vật tư cho tổ đội' };   // v1.13: + XUAT
 
 var TOKEN = '';         // token đăng nhập (Code.gs v0.7 cấp, hạn 30 ngày)
 var CHUA_CO_API = !CONFIG.API_URL || CONFIG.API_URL.indexOf('DAN_URL') === 0;
@@ -753,17 +770,44 @@ function veKiemTra() {
     '<div class="the"><b>' + TEN_LOAI[k.loai] + '</b> · ' + k.thong_ke.so_dong + ' dòng · <span class="tem XANH">' + k.thong_ke.xanh + '</span> <span class="tem VANG">' + k.thong_ke.vang + '</span> <span class="tem DO">' + k.thong_ke.do + '</span></div>' +
     (k.canh_bao || []).map(function (c) { return '<div class="canh-bao">⚠ ' + esc(c) + '</div>'; }).join('');
   document.getElementById('ktTenNcc').textContent = h.ten_ncc_tren_phieu || '(không đọc được)';
-  var sel = ['<option value="">— chọn đối tác —</option>'];
-  DL.doi_tac.forEach(function (d) { sel.push('<option value="' + esc(d.ma_dt) + '"' + (d.ma_dt === h.ma_dt ? ' selected' : '') + '>' + esc(d.ten_dt) + '</option>'); });
+  var laXuatVt = k.loai === 'XUAT';                                                            // v1.13
+  document.getElementById('ktNhanDoiTac').textContent = laXuatVt ? 'Tổ đội / thầu phụ nhận — trên phiếu: ' : 'Đối tác (NCC / bên cho thuê) — trên phiếu: ';
+  document.getElementById('ktNhanSoPhieu').textContent = laXuatVt ? 'Số phiếu giấy' : 'Số phiếu đối tác';
+  document.getElementById('ktNhanNguoiGiao').textContent = laXuatVt ? 'Người đề nghị' : 'Người giao';
+  document.getElementById('ktOSoPdn').style.display = laXuatVt ? 'none' : '';
+  var sel = ['<option value="">' + (laXuatVt ? '— chọn tổ đội —' : '— chọn đối tác —') + '</option>'];
+  if (laXuatVt) dsBenNhan().forEach(function (b) { sel.push('<option value="' + esc(b.ma) + '"' + (b.ma === h.ma_dt ? ' selected' : '') + '>' + esc(b.ten) + (b.loai === 'THAU_PHU' ? ' (thầu phụ)' : '') + '</option>'); });
+  else DL.doi_tac.forEach(function (d) { sel.push('<option value="' + esc(d.ma_dt) + '"' + (d.ma_dt === h.ma_dt ? ' selected' : '') + '>' + esc(d.ten_dt) + '</option>'); });
   document.getElementById('ktMaDt').innerHTML = sel.join('');
   document.getElementById('ktSoPhieu').value = h.so_phieu_ncc || '';
+  veKhoiXuatKiem();                                                                            // v1.13
   var khoNay = document.getElementById('chonKho').value;                                   // v1.5: chọn số đề nghị để tính % hàng về
   document.getElementById('ktSoPdn').innerHTML = '<option value="">— không gắn —</option>' + (DL.de_nghi || []).filter(function (p) { return !p.ma_kho_nhan || p.ma_kho_nhan === khoNay; })
     .map(function (p) { return '<option value="' + esc(p.so_pdn) + '"' + (p.so_pdn === h.so_pdn ? ' selected' : '') + '>' + esc(p.so_pdn) + (p.so_phieu_cty ? ' · ' + esc(p.so_phieu_cty) : '') + (p.hang_muc ? ' · ' + esc(p.hang_muc) : '') + '</option>'; }).join('');
-  document.getElementById('ktNguoiGiao').value = '';
+  document.getElementById('ktNguoiGiao').value = laXuatVt ? (h.nguoi_de_nghi || '') : '';
   veKhoiVcKiem();                                                                            // v1.10
   veDongOcr();
   moTab('KiemTra');
+}
+/* ---- v1.13: phiếu xuất vật tư giấy ---- */
+function dsBenNhan() {                                    // tổ đội của app báo cáo + DOI_TAC loại TO_DOI / THAU_PHU (như tab Xuất kho)
+  var ben = (DL.ben_nhan || []).map(function (b) { return { ma: b.ma, ten: b.ten, loai: b.loai }; }), co = {};
+  ben.forEach(function (b) { co[b.ma] = 1; });
+  (DL.doi_tac || []).forEach(function (d) { if ((d.loai === 'TO_DOI' || d.loai === 'THAU_PHU') && !co[d.ma_dt]) ben.push({ ma: d.ma_dt, ten: d.ten_dt, loai: d.loai }); });
+  return ben;
+}
+function veKhoiXuatKiem() {
+  var kh = document.getElementById('ktKhoiXuat'), k = OCR.ket_qua, h = k.header;
+  if (k.loai !== 'XUAT') { kh.style.display = 'none'; return; }
+  kh.style.display = '';
+  var ck = h.chu_ky || {}, ten = { cht: 'CHT', cbkt: 'CBKT', thu_kho: 'Thủ kho', nguoi_de_nghi: 'Người đề nghị' };
+  var co = Object.keys(ten).filter(function (x) { return ck[x]; }).map(function (x) { return ten[x]; }), thieu = Object.keys(ten).filter(function (x) { return !ck[x]; }).map(function (x) { return ten[x]; });
+  document.getElementById('ktXuatChuKy').innerHTML = 'Chữ ký AI thấy: <b>' + (co.length ? esc(co.join(', ')) : 'không') + '</b>' + (thieu.length ? ' · <span style="color:var(--do)">thiếu: ' + esc(thieu.join(', ')) + '</span>' : ' · đủ');
+  document.getElementById('ktKhuVuc').value = h.khu_vuc || '';
+  var pk = DL.phan_khu_ds || [], kv = boDau(h.khu_vuc || ''), chon = '';
+  pk.forEach(function (p) { if (!chon && kv && (kv.indexOf(boDau(p)) >= 0 || boDau(p).indexOf(kv) >= 0)) chon = p; });   // tự chọn phân khu khớp chữ trên phiếu
+  document.getElementById('ktPhanKhu').innerHTML = '<option value="">— chưa rõ —</option>' + pk.map(function (p) { return '<option value="' + esc(p) + '"' + (p === chon ? ' selected' : '') + '>' + esc(p) + '</option>'; }).join('');
+  document.getElementById('ktMaViec').value = '';
 }
 /* ---- v1.10: khối vận chuyển trên màn kiểm tra ---- */
 var GVC_CACHE = {};
@@ -821,7 +865,8 @@ function veDongOcr() {
     html.push('<tr class="dong-' + d.mau + '" onclick="moChonMa(' + i + ')"><td>' + d.stt + '</td><td>' +
       esc(d.ten_tren_phieu) + (d.dvt_tren_phieu ? ' <span class="nho-mo">(' + esc(d.dvt_tren_phieu) + ')</span>' : '') +
       '<br><b>' + (d.ma_vt ? esc(d.ma_vt) + ' · ' + esc(d.ten_vt) : '<span style="color:var(--do)">chưa có mã — chạm để chọn</span>') + '</b>' +
-      (d.bang_chu ? '<br><span class="nho-mo">Bằng chữ: ' + esc(d.bang_chu) + '</span>' : '') + '</td>' +
+      (d.bang_chu ? '<br><span class="nho-mo">Bằng chữ: ' + esc(d.bang_chu) + '</span>' : '') +
+      (OCR.ket_qua.loai === 'XUAT' ? (d.khu_vuc ? '<br><span class="nho-mo">Khu vực: ' + esc(d.khu_vuc) + '</span>' : '') + (d.ma_vt ? '<br><span class="nho-mo' + (d.qua_ton ? '" style="color:var(--do);font-weight:600' : '') + '">Tồn kho: ' + soVn(d.ton_hien || 0) + ' ' + esc(d.don_vi || '') + (d.qua_ton ? ' — XUẤT QUÁ TỒN' : '') + '</span>' : '') : '') + '</td>' +   // v1.13
       '<td onclick="event.stopPropagation()"><input type="number" step="any" value="' + (d.so_luong == null ? '' : d.so_luong) + '" onchange="suaSL(' + i + ',this.value)" style="margin:0;padding:6px"><div class="nho-mo">' + esc(d.don_vi || '') + '</div></td></tr>');
   });
   html.push('</tbody></table><div class="nho-mo">Chạm vào dòng vàng/đỏ để chọn lại mã. Sửa số nếu AI đọc sai.</div>');
@@ -885,7 +930,7 @@ function huyKiemTra() {
 function guiPhieu() {
   var k = OCR.ket_qua;
   var maDt = document.getElementById('ktMaDt').value;
-  if (!maDt) return bao('Chưa chọn đối tác. Nếu NCC chưa có trong danh mục, báo kế toán kho thêm vào sheet DOI_TAC rồi đăng nhập lại.');
+  if (!maDt) return bao(k.loai === 'XUAT' ? 'Chưa chọn tổ đội / thầu phụ nhận. Nếu tổ đội chưa có trong danh mục, báo kế toán kho thêm vào sheet DOI_TAC (loai = TO_DOI) rồi đăng nhập lại.' : 'Chưa chọn đối tác. Nếu NCC chưa có trong danh mục, báo kế toán kho thêm vào sheet DOI_TAC rồi đăng nhập lại.');
   var thieu = k.dong.filter(function (d) { return !d.ma_vt; });
   if (thieu.length) return bao('Còn ' + thieu.length + ' dòng chưa có mã vật tư (dòng đỏ). Chạm vào dòng để chọn mã hoặc tạo VT-TMP.');
   if (laPhieuThue() && document.getElementById('ktVcLoaiXe').value === '__CHON__')
@@ -900,10 +945,12 @@ function guiPhieu() {
       ngay_tren_phieu: k.header.ngay_tren_phieu, nguoi_giao: document.getElementById('ktNguoiGiao').value,
       bien_so_xe: k.header.bien_so_xe, mst_tren_phieu: k.header.mst_tren_phieu,
       ten_ncc_tren_phieu: k.header.ten_ncc_tren_phieu, so_pdn: document.getElementById('ktSoPdn').value || k.header.so_pdn || '',
-      ghi_chu: '', chu_viet_tay: k.header.chu_viet_tay, van_chuyen: layVcKiem() },                                              // v1.10
+      ghi_chu: '', chu_viet_tay: k.header.chu_viet_tay, van_chuyen: layVcKiem(),                                               // v1.10
+      khu_vuc: k.loai === 'XUAT' ? document.getElementById('ktKhuVuc').value.trim() : '', phan_khu: k.loai === 'XUAT' ? document.getElementById('ktPhanKhu').value : '',   // v1.13
+      ma_viec: k.loai === 'XUAT' ? document.getElementById('ktMaViec').value.trim() : '', nguoi_de_nghi: k.loai === 'XUAT' ? document.getElementById('ktNguoiGiao').value.trim() : '', chu_ky: k.header.chu_ky || null },
     dong: k.dong.map(function (d) { return { stt: d.stt, ten_tren_phieu: d.ten_tren_phieu, ma_vt: d.ma_vt, ten_vt: d.ten_vt,
       don_vi_tren_phieu: d.dvt_tren_phieu, so_luong_tren_phieu: d.so_luong_tren_phieu, don_vi: d.don_vi,
-      so_luong: d.so_luong, don_gia: d.don_gia, thanh_tien: d.thanh_tien, bang_chu: d.bang_chu,
+      so_luong: d.so_luong, don_gia: d.don_gia, thanh_tien: d.thanh_tien, bang_chu: d.bang_chu, khu_vuc: d.khu_vuc || '',
       mau: d.mau, tin_cay: d.tin_cay, thu_kho_sua: !!d.thu_kho_sua, vi_tri_luu: d.vi_tri_luu || '', ghi_chu: '', co: d.co || [] }; })
   }, 90).then(function (kq) {
     tai(false);
@@ -1673,7 +1720,8 @@ function veChiTietPhieu() {
     doiTac = laTd ? 'bên nhận ' + esc(maDtHien) : '<label>Đối tác</label><select id="ctMaDt" onchange="SD.maDt=this.value;veChiTietPhieu()"><option value="">— chọn —</option>' +
       DL.doi_tac.map(function (d) { return '<option value="' + esc(d.ma_dt) + '"' + (d.ma_dt === maDtHien ? ' selected' : '') + '>' + esc(d.ten_dt) + '</option>'; }).join('') + '</select>';
   } else doiTac = 'đối tác ' + esc(maDtHien);
-  var html = anh + '<div class="nho-mo">' + esc(h.loai_giao_dich || '') + ' · ' + esc(h.ma_kho || '') + (h.ma_viec ? ' · việc ' + esc(h.ma_viec) : '') + (h.ten_ncc_tren_phieu ? '<br>Trên phiếu: ' + esc(h.ten_ncc_tren_phieu) : '') + (h.ly_do_duyet ? '<br>' + esc(h.ly_do_duyet) : '') + '</div>' + doiTac +
+  var html = anh + '<div class="nho-mo">' + esc(h.loai_giao_dich || '') + ' · ' + esc(h.ma_kho || '') + (h.ma_viec ? ' · việc ' + esc(h.ma_viec) : '') + (h.ten_ncc_tren_phieu ? '<br>Trên phiếu: ' + esc(h.ten_ncc_tren_phieu) : '') +
+    (String(h.loai_giao_dich || '') === 'XUAT_TO_DOI' ? '<br>Phiếu giấy số <b>' + esc(h.so_phieu_giay || '—') + '</b>' + (h.ngay_tren_phieu ? ' ngày ' + esc(h.ngay_tren_phieu) : '') + (h.khu_vuc ? ' · khu vực ' + esc(h.khu_vuc) : '') + (h.phan_khu ? ' · ' + esc(h.phan_khu) : '') + (h.nguoi_de_nghi ? ' · đề nghị: ' + esc(h.nguoi_de_nghi) : '') + '<br>Chữ ký: ' + (h.chu_ky ? esc(String(h.chu_ky).replace(/cht/, 'CHT').replace(/cbkt/, 'CBKT').replace(/thu_kho/, 'Thủ kho').replace(/nguoi_de_nghi/, 'Người đề nghị')) : '<span style="color:var(--do)">không thấy</span>') : '') /* v1.13 */ + (h.ly_do_duyet ? '<br>' + esc(h.ly_do_duyet) : '') + '</div>' + doiTac +
     '<table><thead><tr><th>Vật tư</th><th>SL</th><th>Màu</th></tr></thead><tbody>';
   SD.dong.forEach(function (d) {
     var sx = SD.sua[d.stt], bo = sx && sx.bo;
