@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.13.0 (GitHub Pages) · 15/09/2026
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.14.0 (GitHub Pages) · 17/09/2026
+  v1.14.0 (anh báo 17/09: thêm vật tư vào VAT_TU mấy tiếng app vẫn không tìm thấy): DANH MỤC TỰ CẬP NHẬT + NÚT ↻.
+    Nguyên nhân: app chỉ tải lại danh mục lúc MỞ TRANG (khoiTao); app cài màn hình chính / APK giữ trang sống nhiều ngày nên
+    danh mục trong máy đứng yên; máy chủ cũng chỉ đọc lại VAT_TU mỗi giờ (trigger). Sửa 3 chỗ:
+    (1) nút "↻ Danh mục" ở Chụp phiếu, Xuất kho và bảng Chọn mã — MỌI vai trò, gọi lamMoiDanhMuc (Code v0.17.1, ~1 s) rồi khoiTao ngầm;
+    (2) tự làm mới ngầm khi app quay lại màn hình (visibilitychange) hoặc mỗi 20 phút nếu lần tải trước đã quá 10 phút — máy chủ so
+        số dòng sheet VAT_TU (Code v0.17.1) nên thêm dòng là thấy ngay, không chờ trigger;
+    (3) tìm vật tư không ra kết quả → dòng gợi ý "Không thấy? ↻ Tải danh mục mới" chạm được. sw.js v1.14.0.
   v1.13.0 (anh yêu cầu 15/09): CHỤP PHIẾU XUẤT VẬT TƯ GIẤY — nút 📤 Xuất vật tư cho tổ đội trong màn Chụp phiếu. Thủ kho chụp tờ phiếu
     đã ký đủ (CHT/CBKT/Thủ kho/Người đề nghị) → AI đọc tổ đội, số phiếu giấy, ngày, từng dòng (tên · ĐVT · khối lượng · khu vực thi công)
     → màn kiểm tra: chọn tổ đội nhận (danh sách tổ đội/thầu phụ), khu vực, phân khu, mã đầu việc KHÔNG bắt buộc; mỗi dòng hiện tồn kho
@@ -405,7 +412,7 @@
 <!-- ======================= CHỤP PHIẾU (OCR) ======================= -->
 <div class="man" id="manChup">
   <div class="the">
-    <label>Kho / bãi</label><select id="chonKho"></select>
+    <div style="display:flex;justify-content:space-between;align-items:center"><label style="margin:0">Kho / bãi</label><button class="nut phu nho" style="margin:0;padding:4px 10px" onclick="lamMoiDanhMucNhanh()" title="Vừa thêm vật tư mới vào danh mục → bấm để app tải ngay">↻ Danh mục <span class="nho-mo" id="dmSoMa"></span></button></div><select id="chonKho"></select>
     <button class="nut" onclick="chup('NHAP')">📥 Nhập kho (mua)</button>
     <button class="nut" onclick="chup('NHAN_THUE')">📦 Nhận hàng thuê</button>
     <button class="nut phu" onclick="chup('TRA_THUE')">↩️ Trả hàng thuê</button>
@@ -469,7 +476,7 @@
     <label>Người nhận (tên người ký)</label><input id="xtNguoiNhan" placeholder="VD: A. Tuấn — tổ xây">
   </div>
   <div class="the">
-    <label>Tìm vật tư</label><input id="xtTim" placeholder="Gõ tên hoặc mã…" oninput="timVatTu(this.value,'xtKQ')">
+    <div style="display:flex;justify-content:space-between;align-items:center"><label style="margin:0">Tìm vật tư</label><button class="nut phu nho" style="margin:0;padding:4px 10px" onclick="lamMoiDanhMucNhanh()">↻ Danh mục</button></div><input id="xtTim" placeholder="Gõ tên hoặc mã…" oninput="timVatTu(this.value,'xtKQ')">
     <div id="xtKQ"></div>
     <table id="xtBang"><thead><tr><th>Vật tư</th><th style="width:70px">SL</th><th style="width:34px"></th></tr></thead><tbody></tbody></table>
   </div>
@@ -537,6 +544,7 @@
   <div id="cmGoiY"></div>
   <label>Hoặc tìm trong danh mục</label>
   <input id="cmTim" placeholder="Gõ tên hoặc mã…" oninput="timVatTu(this.value,'cmKQ',chonMaTuTim)">
+  <button class="nut phu nho" onclick="lamMoiDanhMucNhanh()">↻ Tải danh mục mới (kế toán vừa thêm mã)</button>
   <div id="cmKQ"></div>
   <button class="nut phu" onclick="taoMaTam()">＋ Tạo mã tạm VT-TMP (kế toán gán mã chuẩn sau)</button>
   <button class="nut phu" onclick="dong('moChonMa')">Đóng</button>
@@ -660,6 +668,7 @@ window.addEventListener('load', function () {
   if (p.dl) { batDau(p.dl); taiNgam(); }                        // hiện ngay bản đã lưu · v1.11: tải ngầm các màn khác
   if (!navigator.onLine) { if (!p.dl) hienLogin('Không có mạng. Lần đăng nhập đầu tiên phải có kết nối.'); return; }
   tai(!p.dl, 'Đang tải dữ liệu kho…');
+  LAN_KHOI_TAO = Date.now();
   api('khoiTao', { dm_ver: p.dl && p.dl.dm_ver || '' }, 90).then(function (kq) { tai(false); batDau(kq); luuPhien(DL); taiNgam(); })
     .catch(function (e) { tai(false); if (!p.dl) hienLogin(e.message); });   // lỗi TOKEN đã được api() xử lý
 });
@@ -686,7 +695,7 @@ function dangXuat() {
 function batDau(kq) {
     if (!kq.vat_tu && DL && DL.vat_tu) kq.vat_tu = DL.vat_tu;             // v1.2: máy chủ không gửi lại danh mục vì chưa đổi
     if (!kq.vat_tu) kq.vat_tu = [];
-    DL = kq; docMay();                                                    // v1.11: nạp bộ nhớ màn hình của tài khoản này
+    DL = kq; docMay(); capNhatSoMa();                                    // v1.11: nạp bộ nhớ màn hình của tài khoản này · v1.14: số mã
     document.getElementById('topUser').textContent = (kq.user.ho_ten || kq.user.email) + ' · ' + kq.user.ma_da;
     document.getElementById('tieuDe').textContent = 'Kho ' + kq.user.ma_da;
     var optKho = kq.user.khos.map(function (k) { return '<option value="' + esc(k.ma_kho) + '">' + esc(k.ten_kho || k.ma_kho) + '</option>'; }).join('');
@@ -896,8 +905,37 @@ function timVatTu(tu, idKQ, onChon) {
     var dongIdx = el.getAttribute('data-dong');                                                       // v1.6: gợi ý cho dòng đề nghị chưa có mã
     var fn = dongIdx != null ? 'ganMaDongDeNghi(' + dongIdx + ",'" + esc(v[0]) + "')" : (onChon ? onChon.name : 'themDongXuat') + "('" + esc(v[0]) + "')";
     return '<div class="goi-y" onclick="' + fn + '"><b>' + esc(v[0]) + '</b> · ' + esc(v[1]) + ' <span class="nho-mo">(' + esc(v[2]) + ')</span></div>';
-  }).join('');
+  }).join('') || (q.length >= 3 ? '<div class="goi-y" style="border-style:dashed;color:var(--do)" onclick="lamMoiDanhMucNhanh()">Không thấy "' + esc(tu.trim()) + '" trong ' + DL.vat_tu.length + ' mã đang có trên máy — chạm để <b>↻ tải danh mục mới</b> (nếu kế toán vừa thêm)</div>' : '');   // v1.14
 }
+/* v1.14: làm mới danh mục vật tư — mọi vai trò, ~1–2 s; sau đó khoiTao ngầm để lấy đối tác / đề nghị mới */
+var LAN_KHOI_TAO = 0;
+function lamMoiDanhMucNhanh() {
+  if (!navigator.onLine) return bao('Không có mạng — chưa tải được danh mục mới.');
+  tai(true, 'Đang tải danh mục vật tư mới từ máy chủ…');
+  api('lamMoiDanhMuc', {}, 60).then(function (kq) {
+    tai(false);
+    if (kq.vat_tu && kq.vat_tu.length) { DL.vat_tu = kq.vat_tu; DL.dm_ver = kq.dm_ver; luuPhien(DL); capNhatSoMa(); }
+    bao('Danh mục vật tư: ' + (kq.so_ma || 0) + ' mã (máy chủ đọc lại lúc ' + (kq.luc || '') + ').\nGõ tìm lại tên vật tư vừa thêm.');
+    khoiTaoNgam(true);
+  }).catch(function (e) { tai(false); bao('Không làm mới được danh mục: ' + e.message); });
+}
+function capNhatSoMa() { var el = document.getElementById('dmSoMa'); if (el && DL && DL.vat_tu) el.textContent = '(' + DL.vat_tu.length + ' mã)'; }
+/* v1.14: khoiTao ngầm — dùng khi app quay lại màn hình hoặc định kỳ; máy chủ chỉ gửi lại danh mục nếu VAT_TU đã đổi */
+function khoiTaoNgam(ep) {
+  if (!DL || !TOKEN || !navigator.onLine) return;
+  if (!ep && Date.now() - LAN_KHOI_TAO < 10 * 60 * 1000) return;                               // vừa tải < 10 phút → thôi
+  LAN_KHOI_TAO = Date.now();
+  api('khoiTao', { dm_ver: DL.dm_ver || '' }, 90).then(function (kq) { batDauGiu(kq); luuPhien(DL); }).catch(function () { });
+}
+/* v1.14: batDau nhưng GIỮ các ô đang chọn (kho, bên nhận, CBKT, phân khu…) — người dùng đang điền phiếu thì không bị mất */
+function batDauGiu(kq) {
+  var ids = ['chonKho', 'xtKho', 'tonKho', 'ldKho', 'xtBenNhan', 'xtCbkt', 'xtPhanKhu', 'tqDuAn'], cu = {};
+  ids.forEach(function (id) { var el = document.getElementById(id); if (el) cu[id] = el.value; });
+  batDau(kq);
+  ids.forEach(function (id) { var el = document.getElementById(id); if (el && cu[id] && Array.prototype.some.call(el.options, function (o) { return o.value === cu[id]; })) el.value = cu[id]; });
+}
+document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') khoiTaoNgam(false); });
+setInterval(function () { if (document.visibilityState === 'visible') khoiTaoNgam(false); }, 20 * 60 * 1000);
 function timVt(ma) { for (var i = 0; i < DL.vat_tu.length; i++) if (DL.vat_tu[i][0] === ma) return DL.vat_tu[i]; return null; }
 function chonMaTuTim(ma) { chonMa(ma); }
 function chonMa(ma) {
