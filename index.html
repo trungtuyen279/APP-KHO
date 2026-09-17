@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.14.0 (GitHub Pages) · 17/09/2026
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.14.1 (GitHub Pages) · 17/09/2026
+  v1.14.1 (anh báo 17/09 tối — nhiều người gặp "Máy chủ trả về dữ liệu không hợp lệ (<!DOCTYPE html…)"): api() tự thử lại 3 lần khi Google trả
+  trang HTML / mất kết nối / quá giờ; hành động ghi gửi yc_id để máy chủ (Code v0.17.2) không ghi trùng khi thử lại; thông báo lỗi nói rõ nguyên nhân.
   v1.14.0 (anh báo 17/09: thêm vật tư vào VAT_TU mấy tiếng app vẫn không tìm thấy): DANH MỤC TỰ CẬP NHẬT + NÚT ↻.
     Nguyên nhân: app chỉ tải lại danh mục lúc MỞ TRANG (khoiTao); app cài màn hình chính / APK giữ trang sống nhiều ngày nên
     danh mục trong máy đứng yên; máy chủ cũng chỉ đọc lại VAT_TU mỗi giờ (trigger). Sửa 3 chỗ:
@@ -573,28 +575,64 @@ var CHUA_CO_API = !CONFIG.API_URL || CONFIG.API_URL.indexOf('DAN_URL') === 0;
 
 /* Gọi Apps Script — giống app báo cáo: POST text/plain (không preflight CORS), thân JSON {action, token, data}.
    Máy chủ trả {ok, data} hoặc {ok:false, error}. Lỗi 'TOKEN: …' → xóa phiên, về màn đăng nhập. */
-function api(action, data, giay) {
+/* v1.14.1 — gọi máy chủ có TỰ THỬ LẠI: Google thỉnh thoảng trả trang HTML ("Rất tiếc, không thể mở tệp…") thay vì JSON khi
+   Apps Script quá tải / lỗi tạm thời → trước đây app báo "Máy chủ trả về dữ liệu không hợp lệ". Nay: thử lại tối đa 3 lần
+   (chờ 1,5 s → 3 s → 6 s), báo tiến trình trên hộp "Đang xử lý". Hành động GHI gửi kèm yc_id (mã duy nhất mỗi lần bấm):
+   máy chủ v0.17.2 nhớ kết quả theo yc_id nên thử lại không tạo phiếu trùng / duyệt 2 lần. */
+var API_GHI = { ocrPhieu: 1, taoMaTam: 1, guiPhieuOcr: 1, xuatTay: 1, chuyenXeLuu: 1, deNghiLuu: 1, deNghiBuoc: 1, deNghiAnh: 1, duyet: 1, suaPhieu: 1, daKiemMau: 1, vatLieuTay: 1 };
+var API_THU_LAI = 3, API_CHO_MS = [1500, 3000, 6000];
+function apiMaYc() { return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10) + '-' + Math.random().toString(36).slice(2, 6); }
+function apiChu(msg) {                                     // ghi tiến trình thử lại lên hộp Đang xử lý (nếu đang hiện), không mở hộp mới
+  try { var t = document.getElementById('tai'); if (t && t.classList.contains('hien')) { document.getElementById('taiChu').textContent = msg; if (typeof taiTimer !== 'undefined') clearInterval(taiTimer); } } catch (e) { }
+}
+function apiDoanLoiHtml(raw) {                             // trang HTML Google trả về → lỗi tạm thời hay lỗi cấu hình?
+  var r = String(raw || '');
+  if (/accounts\.google\.com|ServiceLogin|Đăng nhập|Sign in/i.test(r)) return { tam: false, msg: 'Web App đang yêu cầu đăng nhập Google — quyền triển khai phải là "Bất kỳ ai" (Anyone). Báo quản trị kiểm tra Triển khai.' };
+  if (/Script function not found|doPost/i.test(r)) return { tam: false, msg: 'Máy chủ chưa có hàm doPost — Code.gs chưa triển khai đúng phiên bản. Báo quản trị.' };
+  return { tam: true, msg: 'Máy chủ Google bận tạm thời' };
+}
+function api(action, data, giay, _lan, _yc) {
   if (CHUA_CO_API) return Promise.reject(new Error('File config.js chưa có địa chỉ Web App (API_URL). Xem hướng dẫn triển khai.'));
   if (!navigator.onLine) return Promise.reject(new Error('Không có mạng. Kiểm tra sóng 4G / Wi-Fi rồi thử lại.'));
-  var bo = new AbortController();
-  var hen = setTimeout(function () { bo.abort(); }, (giay || 60) * 1000);
+  var lan = _lan || 1, yc = _yc || (API_GHI[action] ? apiMaYc() : '');
+  var goi = { action: action, token: TOKEN, data: data || {} };
+  if (yc) goi.yc_id = yc;
+  function thuLai(lyDo, loiCuoi) {                         // lỗi tạm thời → chờ rồi gọi lại CÙNG yc_id (máy chủ không ghi trùng)
+    if (lan >= API_THU_LAI) return Promise.reject(new Error(loiCuoi));
+    var cho = API_CHO_MS[lan - 1] || 6000;
+    apiChu(lyDo + ' — tự thử lại lần ' + (lan + 1) + '/' + API_THU_LAI + ' sau ' + Math.round(cho / 1000) + ' s…');
+    return new Promise(function (r) { setTimeout(r, cho); }).then(function () { return api(action, data, giay, lan + 1, yc); });
+  }
+  var bo = new AbortController(), hen = setTimeout(function () { bo.abort(); }, (giay || 60) * 1000);
   return fetch(CONFIG.API_URL, {
     method: 'POST', redirect: 'follow', signal: bo.signal,
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action: action, token: TOKEN, data: data || {} })
-  }).catch(function (e) {
-    throw new Error(e.name === 'AbortError' ? 'Máy chủ không phản hồi sau ' + (giay || 60) + ' giây. Thử lại nơi sóng tốt hơn.' : 'Không kết nối được máy chủ. Kiểm tra sóng 4G / Wi-Fi.');
-  }).then(function (res) { clearTimeout(hen); return res.text(); })
-    .then(function (raw) {
-      var out;
-      try { out = JSON.parse(raw); }
-      catch (e) { throw new Error('Máy chủ trả về dữ liệu không hợp lệ — thường do Code.gs lỗi hoặc chưa triển khai phiên bản mới (' + raw.slice(0, 80) + ')'); }
-      if (!out.ok) {
-        if (/^TOKEN:/.test(out.error || '')) { xoaPhien(); hienLogin(out.error.replace(/^TOKEN:\s*/, '')); }
-        throw new Error(out.error || 'Máy chủ từ chối yêu cầu');
-      }
-      return out.data;
-    });
+    body: JSON.stringify(goi)
+  }).then(function (res) {
+    return res.text().then(function (raw) { return { status: res.status, raw: raw }; });
+  }, function (e) {
+    return { loiMang: e && e.name === 'AbortError' ? 'ABORT' : 'MANG' };
+  }).then(function (kq) {
+    clearTimeout(hen);
+    if (kq.loiMang === 'ABORT') {
+      var mAb = 'Máy chủ không phản hồi sau ' + (giay || 60) + ' giây. Thử lại nơi sóng tốt hơn.';
+      return yc ? thuLai('Máy chủ chậm', mAb) : Promise.reject(new Error(mAb));   // hành động ghi có yc_id → gọi lại an toàn; đọc thì báo ngay
+    }
+    if (kq.loiMang) return thuLai('Mất kết nối', 'Không kết nối được máy chủ sau ' + API_THU_LAI + ' lần. Kiểm tra sóng 4G / Wi-Fi rồi bấm lại' + (yc ? ' (nếu đã ghi, máy chủ không ghi trùng)' : '') + '.');
+    var out;
+    try { out = JSON.parse(kq.raw); }
+    catch (e) {
+      var d = apiDoanLoiHtml(kq.raw);
+      if (!d.tam) return Promise.reject(new Error(d.msg));
+      return thuLai(d.msg, 'Máy chủ Google bận, đã tự thử lại ' + API_THU_LAI + ' lần chưa được. Đợi 1 phút rồi bấm lại' + (yc ? ' — yêu cầu vừa gửi không bị ghi trùng' : '') + '. (Mã: HTML ' + kq.status + ')');
+    }
+    if (!out.ok) {
+      if (/^TOKEN:/.test(out.error || '')) { xoaPhien(); hienLogin(out.error.replace(/^TOKEN:\s*/, '')); }
+      if (/^DANG_XU_LY:/.test(out.error || '')) return thuLai('Yêu cầu trước đang chạy', 'Máy chủ vẫn đang xử lý yêu cầu trước. Đợi 1 phút, làm mới rồi kiểm tra kết quả trước khi bấm lại.');
+      return Promise.reject(new Error(out.error || 'Máy chủ từ chối yêu cầu'));
+    }
+    return out.data;
+  });
 }
 /* Lưu phiên trên máy: token + hồ sơ + dữ liệu khởi tạo (để mở lại app nhanh, xem được khi mất mạng) */
 function luuPhien(kq) { try { localStorage.setItem('kho_phien', JSON.stringify({ token: TOKEN, dl: kq, luc: Date.now(), ver: CONFIG.VERSION })); } catch (e) { } }
