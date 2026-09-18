@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.15.0 (GitHub Pages) · 18/09/2026 · đi cùng Code v0.18.0
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.15.1 (GitHub Pages) · 19/09/2026 · đi cùng Code v0.18.0 + OCR v1.8.0
+  v1.15.1 (anh báo 19/09: chụp phiếu hay gặp "Gemini HTTP 503 high demand", OCR lâu): app tự gửi lại ảnh 1 lần sau 5 s khi máy chủ báo
+    "AI đang quá tải" (máy chủ v1.8 đã tự đổi model/nhà cung cấp trước đó); hộp chờ ghi rõ "thường 10–30 giây"; màn kiểm tra ghi
+    dòng nhỏ "AI: gemini · gemini-3.8-flash · 14 s (thử 3 lần)" để đo tốc độ thực tế; lỗi hiện ngắn gọn, không in JSON của Google.
   v1.15.0 (3 ý kiến người dùng, file "Issue app kho" 18/09):
     (1) Xuất kho: ô "CBKT phụ trách" → "Người đề nghị / phụ trách": máy chủ v0.18 gửi MỌI nhân sự HOAT_DONG của dự án, app hiện
         chức danh theo vi_tri_kpi (CBKT, PCH, CBAT, QS, SHOP, THO_DIEN…), CBKT/CHT xếp trước. Ai cũng có thể đề nghị, không chỉ CBKT.
@@ -795,20 +798,30 @@ function docOcrHangDoi(j) {                                // nén + AI đọc �
   var x = HD.ds[j]; if (!x) return Promise.resolve(null); if (x.p) return x.p;
   x.p = new Promise(function (res) { nenAnhFile(x.file, res); }).then(function (dataUrl) {
     x.dataUrl = dataUrl;
-    return api('ocrPhieu', { loai: HD.loai, ma_da: DL.user.ma_da, ma_kho: HD.kho, anh_base64: dataUrl.split(',')[1], mime: 'image/jpeg', thiet_bi: THIET_BI }, 150);
+    var goi = function (lan) {                                                                          // v1.15.1: AI quá tải → gửi lại 1 lần sau 5 s
+      return api('ocrPhieu', { loai: HD.loai, ma_da: DL.user.ma_da, ma_kho: HD.kho, anh_base64: dataUrl.split(',')[1], mime: 'image/jpeg', thiet_bi: THIET_BI }, 150)
+        .catch(function (e) {
+          if (lan === 0 && /AI .*quá tải|đang quá tải/i.test(e.message || '')) {
+            apiChu('AI đang quá tải — app tự gửi lại lần 2 sau 5 giây…');
+            return new Promise(function (r) { setTimeout(r, 5000); }).then(function () { return goi(1); });
+          }
+          throw e;
+        });
+    };
+    return goi(0);
   }).then(function (kq) { x.kq = kq; return x; }, function (e) { x.loi = e.message; return x; });
   return x.p;
 }
 function moPhieuHangDoi(j) {
   HD.i = j; var n = HD.ds.length;
-  tai(true, n > 1 ? 'AI đang đọc phiếu ' + (j + 1) + '/' + n + ' (10–60 giây mỗi phiếu)…' : 'AI đang đọc phiếu (10–60 giây)…');
+  tai(true, n > 1 ? 'AI đang đọc phiếu ' + (j + 1) + '/' + n + ' (thường 10–30 giây mỗi phiếu)…' : 'AI đang đọc phiếu (thường 10–30 giây)…');
   docOcrHangDoi(j).then(function (x) {
     tai(false);
     if (j + 1 < n) docOcrHangDoi(j + 1).then(function () { var el = document.getElementById('hdChu'); if (el && HD.i === j) el.outerHTML = chuHangDoi(); });   // đọc trước phiếu kế; xong thì cập nhật dòng trạng thái
     if (x.loi) {
       var conLai = n - j - 1;
       if (conLai > 0 && confirm('AI không đọc được ảnh ' + (j + 1) + '/' + n + ' (' + x.loi + ').\nBỏ qua ảnh này và sang ảnh kế?')) return phieuTiepTheo();
-      bao('AI không đọc được (' + x.loi + ').\nAnh có thể thử chụp lại hoặc lập phiếu bằng tab Xuất kho / nhập tay trên Sheets.');
+      bao((/quá tải/i.test(x.loi) ? x.loi : 'AI không đọc được (' + x.loi + ').') + '\nAnh có thể thử chụp lại hoặc lập phiếu bằng tab Xuất kho / nhập tay trên Sheets.');   // v1.15.1: lỗi quá tải đã có hướng dẫn sẵn
       return ketThucHangDoi();
     }
     document.getElementById('ktAnh').src = x.dataUrl; OCR = x.kq; veKiemTra();
@@ -825,7 +838,8 @@ function chuHangDoi() {                                    // dòng "Phiếu 2/5
 /* ================= màn kiểm tra ================= */
 function veKiemTra() {
   var k = OCR.ket_qua, h = k.header;
-  document.getElementById('ktCanhBao').innerHTML = chuHangDoi() +
+  var aiChu = OCR.ai ? '<div class="nho-mo">AI: ' + esc(OCR.ai.nha || '') + ' · ' + esc(OCR.ai.model || '') + ' · ' + Math.round((OCR.ai.ms || 0) / 1000) + ' s' + (OCR.ai.thu && OCR.ai.thu.length > 1 ? ' (thử ' + OCR.ai.thu.length + ' lần)' : '') + '</div>' : '';   // v1.15.1: đo tốc độ thực tế
+  document.getElementById('ktCanhBao').innerHTML = aiChu + chuHangDoi() +
     '<div class="the"><b>' + TEN_LOAI[k.loai] + '</b> · ' + k.thong_ke.so_dong + ' dòng · <span class="tem XANH">' + k.thong_ke.xanh + '</span> <span class="tem VANG">' + k.thong_ke.vang + '</span> <span class="tem DO">' + k.thong_ke.do + '</span></div>' +
     (k.canh_bao || []).map(function (c) { return '<div class="canh-bao">⚠ ' + esc(c) + '</div>'; }).join('');
   document.getElementById('ktTenNcc').textContent = h.ten_ncc_tren_phieu || '(không đọc được)';
