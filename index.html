@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.14.1 (GitHub Pages) · 17/09/2026
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.14.2 (GitHub Pages) · 18/09/2026
+  v1.14.2 (anh báo 18/09: vật tư có trong danh mục nhưng tìm trên app không thấy, thủ kho phải tạo mã tạm): ô tìm vật tư cũ DỪNG Ở 8 KẾT QUẢ
+    ĐẦU theo thứ tự sheet nên mã thêm sau (cuối sheet, VD Coupler 16/18 = VT-THEP-054) không bao giờ hiện dù đã tải về máy. Nay quét hết danh mục,
+    xếp hạng theo độ khớp, hiện 12 dòng + báo "còn n mã — gõ thêm chữ"; gõ nhiều từ ("coupler 16") tìm được; bảng Chọn mã điền sẵn tên trên phiếu.
   v1.14.1 (anh báo 17/09 tối — nhiều người gặp "Máy chủ trả về dữ liệu không hợp lệ (<!DOCTYPE html…)"): api() tự thử lại 3 lần khi Google trả
   trang HTML / mất kết nối / quá giờ; hành động ghi gửi yc_id để máy chủ (Code v0.17.2) không ghi trùng khi thử lại; thông báo lỗi nói rõ nguyên nhân.
   v1.14.0 (anh báo 17/09: thêm vật tư vào VAT_TU mấy tiếng app vẫn không tìm thấy): DANH MỤC TỰ CẬP NHẬT + NÚT ↻.
@@ -927,23 +930,39 @@ function moChonMa(i) {
   document.getElementById('cmGoiY').innerHTML = (d.goi_y || []).map(function (g) {
     return '<div class="goi-y" onclick="chonMa(\'' + esc(g.ma_vt) + '\')"><b>' + esc(g.ma_vt) + '</b> · ' + esc(g.ten_vt) + ' <span class="nho-mo">(' + esc(g.don_vi) + ' · điểm ' + g.diem + ')</span></div>';
   }).join('') || '<div class="nho-mo">Không có gợi ý</div>';
-  document.getElementById('cmTim').value = ''; document.getElementById('cmKQ').innerHTML = '';
+  document.getElementById('cmTim').value = d.ten_tren_phieu || ''; timVatTu(d.ten_tren_phieu || '', 'cmKQ', chonMaTuTim);   // v1.14.2: điền sẵn tên trên phiếu → thủ kho thấy ngay mã gần đúng, chỉ cần sửa bớt chữ
   document.getElementById('moChonMa').classList.add('hien');
 }
 function boDau(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase(); }
+/* v1.14.2 — tìm vật tư: KHÔNG dừng ở 8 dòng đầu theo thứ tự sheet (lỗi cũ: gõ "Coupler" chỉ thấy VT-THEP-001…008, mã 053/054 nằm cuối
+   sheet không bao giờ hiện dù đã có trên máy). Nay: quét TOÀN BỘ danh mục, xếp hạng (trùng hẳn > bắt đầu bằng > chứa > đủ mọi từ khóa
+   bất kỳ thứ tự > khớp quy cách), hiện tối đa TIM_TOI_DA dòng và báo "còn n mã — gõ thêm chữ". Gõ nhiều từ ("coupler 16") tìm được
+   "Coupler 16/18". */
+var TIM_TOI_DA = 12;
+function timVatTuXep(q) {                                 // → [{v, d}] đã xếp hạng; q đã bỏ dấu
+  var tokens = q.split(/\s+/).filter(Boolean), kq = [];
+  for (var i = 0; i < DL.vat_tu.length; i++) {
+    var v = DL.vat_tu[i], ma = boDau(v[0]), ten = boDau(v[1]), qc = boDau(v[3] || ''), d = 0;
+    if (ma === q || ten === q) d = 100;
+    else if (ten.indexOf(q) === 0 || ma.indexOf(q) === 0) d = 80;
+    else if (ten.indexOf(q) >= 0 || ma.indexOf(q) >= 0) d = 60;
+    else if (tokens.length > 1 && tokens.every(function (t) { return ten.indexOf(t) >= 0 || ma.indexOf(t) >= 0 || qc.indexOf(t) >= 0; })) d = 40;
+    else if (qc && qc.indexOf(q) >= 0) d = 30;
+    if (d) kq.push({ v: v, d: d - Math.min(ten.length, 200) / 1000, i: i });   // cùng hạng: tên ngắn (gần từ khóa hơn) lên trước, rồi theo thứ tự sheet
+  }
+  kq.sort(function (a, b) { return b.d - a.d || a.i - b.i; });
+  return kq;
+}
 function timVatTu(tu, idKQ, onChon) {
   var q = boDau(tu).trim(); var el = document.getElementById(idKQ);
   if (q.length < 2) { el.innerHTML = ''; return; }
-  var kq = [];
-  for (var i = 0; i < DL.vat_tu.length && kq.length < 8; i++) {
-    var v = DL.vat_tu[i];
-    if (boDau(v[0]).indexOf(q) >= 0 || boDau(v[1]).indexOf(q) >= 0) kq.push(v);
-  }
+  var tatCa = timVatTuXep(q), kq = tatCa.slice(0, TIM_TOI_DA).map(function (x) { return x.v; });
   el.innerHTML = kq.map(function (v) {
     var dongIdx = el.getAttribute('data-dong');                                                       // v1.6: gợi ý cho dòng đề nghị chưa có mã
     var fn = dongIdx != null ? 'ganMaDongDeNghi(' + dongIdx + ",'" + esc(v[0]) + "')" : (onChon ? onChon.name : 'themDongXuat') + "('" + esc(v[0]) + "')";
-    return '<div class="goi-y" onclick="' + fn + '"><b>' + esc(v[0]) + '</b> · ' + esc(v[1]) + ' <span class="nho-mo">(' + esc(v[2]) + ')</span></div>';
-  }).join('') || (q.length >= 3 ? '<div class="goi-y" style="border-style:dashed;color:var(--do)" onclick="lamMoiDanhMucNhanh()">Không thấy "' + esc(tu.trim()) + '" trong ' + DL.vat_tu.length + ' mã đang có trên máy — chạm để <b>↻ tải danh mục mới</b> (nếu kế toán vừa thêm)</div>' : '');   // v1.14
+    return '<div class="goi-y" onclick="' + fn + '"><b>' + esc(v[0]) + '</b> · ' + esc(v[1]) + ' <span class="nho-mo">(' + esc(v[2]) + (v[3] ? ' · ' + esc(v[3]) : '') + ')</span></div>';
+  }).join('') + (tatCa.length > TIM_TOI_DA ? '<div class="nho-mo" id="' + idKQ + 'Con" style="padding:4px 2px">… còn ' + (tatCa.length - TIM_TOI_DA) + ' mã nữa khớp "' + esc(tu.trim()) + '" — gõ thêm chữ / kích cỡ (VD: "' + esc(tu.trim()) + ' 16") để thu hẹp</div>' : '')
+    || (q.length >= 3 ? '<div class="goi-y" style="border-style:dashed;color:var(--do)" onclick="lamMoiDanhMucNhanh()">Không thấy "' + esc(tu.trim()) + '" trong ' + DL.vat_tu.length + ' mã đang có trên máy — chạm để <b>↻ tải danh mục mới</b> (nếu kế toán vừa thêm)</div>' : '');   // v1.14
 }
 /* v1.14: làm mới danh mục vật tư — mọi vai trò, ~1–2 s; sau đó khoiTao ngầm để lấy đối tác / đề nghị mới */
 var LAN_KHOI_TAO = 0;
