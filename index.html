@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.16.0 (GitHub Pages) · 20/09/2026 · đi cùng Code v0.19.0 + OCR v1.9.0
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.16.1 (GitHub Pages) · 21/09/2026 · đi cùng Code v0.19.0 + OCR v1.9.1
+  v1.16.1 (anh góp ý 21/09 sáng: bấm gửi ảnh vẫn phải nhìn hộp "Đang xử lý… Đang gửi ảnh 1/1"): gửi ảnh chạy NỀN trên điện thoại —
+    không hộp chờ, không alert; phiếu hiện ngay trong danh sách với nhãn ĐANG GỬI (nén + tải lên phía sau), xong thì đổi thành CHỜ AI;
+    lỗi mạng → nhãn LỖI GỬI kèm nút "Gửi lại" (giữ ảnh trong bộ nhớ app) / Bỏ. Danh sách tải từ máy chủ không xóa các phiếu đang gửi.
+    Dòng nhắc nhỏ (toast) 4 giây thay cho hộp thoại phải bấm OK.
   v1.16.0 (3 đề xuất của anh 20/09):
     (1) Tồn kho: hàng chip lọc Tất cả / Hết (tồn ≤ 0) / Sắp hết (0 < tồn ≤ tồn tối thiểu hoặc ≤ 10 % nhập lũy kế — máy chủ v0.19 cờ
         SAP_HET) / Còn nhiều; chip hiện số mã; lọc kết hợp với ô tìm.
@@ -169,6 +173,9 @@
   .hd-item{border:1px solid var(--vien);border-radius:8px;padding:8px;margin:6px 0;background:#fff}
   .hd-item.XONG{border-color:var(--ok);background:#f1f8e9} .hd-item.LOI{border-color:var(--do);background:#ffebee} .hd-item.DANG_DOC{background:#e3f2fd}
   .tem.CHO{background:#888}.tem.DANG_DOC{background:#1565c0}.tem.XONG{background:var(--ok)}.tem.LOI{background:var(--do)}
+  .tem.DANG_GUI{background:#6a1b9a}.tem.LOI_GUI{background:var(--do)} .hd-item.DANG_GUI{background:#f3e5f5} .hd-item.LOI_GUI{border-color:var(--do);background:#ffebee}
+  .nhac{position:fixed;left:50%;bottom:76px;transform:translateX(-50%);background:#323232;color:#fff;padding:10px 14px;border-radius:8px;font-size:14px;max-width:92vw;z-index:31;box-shadow:0 2px 8px rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:opacity .25s}
+  .nhac.hien{opacity:1}
   .tk-dong{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-top:1px solid var(--vien);font-size:14px}
   .tk-dong:first-child{border-top:0} .tk-dong b{text-align:right}
   .anh-phieu{width:100%;max-height:38vh;object-fit:contain;background:#222;border-radius:8px}
@@ -272,6 +279,7 @@
 </head>
 <body>
 <div class="tai" id="tai">⏳ Đang xử lý…<div class="nho-mo" id="taiChu"></div></div>
+<div class="nhac" id="nhac"></div>
 
 <div class="top"><div class="trai"><img src="icons/logo.png" alt=""><div><h1 id="tieuDe">Kho công trường</h1><small id="topUser"></small></div></div><button id="btnThoat" onclick="dangXuat()" style="display:none">Thoát</button></div>
 <div class="secbar" id="secbar">KHO CÔNG TRƯỜNG — LICOGI13FC</div>
@@ -754,6 +762,11 @@ function moTab(t) {
 }
 function dong(id) { document.getElementById(id).classList.remove('hien'); }
 function bao(msg) { alert(msg); }
+var nhacHen = null;
+function nhac(msg, giay) {                                  // v1.16.1: dòng nhắc nhỏ không chặn thao tác (thay alert cho việc chạy nền)
+  var el = document.getElementById('nhac'); if (!el) return; el.textContent = msg; el.classList.add('hien');
+  clearTimeout(nhacHen); nhacHen = setTimeout(function () { el.classList.remove('hien'); }, (giay || 4) * 1000);
+}
 
 /* ================= khởi động + đăng nhập ================= */
 function hienLogin(loi) {
@@ -852,24 +865,37 @@ function anhDaChon(ev) {
   if (fs.length > HD_TOI_DA) { bao('Chọn tối đa ' + HD_TOI_DA + ' ảnh một lần — app lấy ' + HD_TOI_DA + ' ảnh đầu.'); fs = fs.slice(0, HD_TOI_DA); }
   nopAnhHangDoi(fs, loaiDangChup, document.getElementById('chonKho').value);
 }
-function nopAnhHangDoi(fs, loai, kho) {                    // gửi lần lượt từng ảnh; lỗi ảnh nào báo ảnh đó, ảnh khác vẫn gửi
-  var n = fs.length, daGui = 0, loi = [];
-  tai(true, 'Đang gửi ảnh 1/' + n + ' lên máy chủ…');
-  function guiTiep(j) {
-    if (j >= n) {
-      tai(false);
-      bao((daGui ? 'Đã gửi ' + daGui + '/' + n + ' ảnh. AI sẽ đọc xong trong khoảng 1–3 phút — app báo ở tab Chụp phiếu (số đỏ), anh vào "Kiểm tra & gửi" từng phiếu.' : 'Chưa gửi được ảnh nào.') + (loi.length ? '\nKhông gửi được: ' + loi.join('; ') : ''));
-      taiHangDoi(true); moTab('Chup');
-      return;
-    }
-    apiChu('Đang gửi ảnh ' + (j + 1) + '/' + n + ' lên máy chủ…');
-    new Promise(function (res) { nenAnhFile(fs[j], res); }).then(function (dataUrl) {
-      return api('ocrNopAnh', { loai: loai, ma_da: DL.user.ma_da, ma_kho: kho, anh_base64: dataUrl.split(',')[1], mime: 'image/jpeg', thiet_bi: THIET_BI }, 90);
-    }).then(function (kq) { daGui++; HDQ.ds.unshift({ id: kq.id, loai: loai, ma_kho: kho, email_gui: DL.user.email, ho_ten_gui: DL.user.ho_ten, gui_luc: kq.gui_luc || '', trang_thai: 'CHO', so_dong: 0, xanh: 0, vang: 0, do: 0, ten_ncc: '', loi: '' }); HDQ.dem.CHO++; veHangDoi(); guiTiep(j + 1); },
-      function (e) { loi.push('ảnh ' + (j + 1) + ': ' + e.message); guiTiep(j + 1); });
-  }
-  guiTiep(0);
+var HDG = { ds: [], dangGui: false, dem: 0 };                 // v1.16.1: ảnh đang gửi nền (giữ File để gửi lại khi lỗi)
+function nopAnhHangDoi(fs, loai, kho) {                    // v1.16.1: KHÔNG hộp chờ — phiếu hiện ngay "ĐANG GỬI", nén + tải lên chạy nền, xong đổi CHỜ AI
+  var luc = new Date(), gioPhut = ('0' + luc.getDate()).slice(-2) + '/' + ('0' + (luc.getMonth() + 1)).slice(-2) + '/' + luc.getFullYear() + ' ' + ('0' + luc.getHours()).slice(-2) + ':' + ('0' + luc.getMinutes()).slice(-2);
+  fs.forEach(function (f) {
+    HDG.ds.push({ id: 'L-' + (++HDG.dem) + '-' + Date.now(), file: f, loai: loai, ma_kho: kho, ma_da: DL.user.ma_da, email_gui: DL.user.email, ho_ten_gui: DL.user.ho_ten, gui_luc: gioPhut, trang_thai: 'DANG_GUI', so_dong: 0, xanh: 0, vang: 0, do: 0, ten_ncc: '', loi: '' });
+  });
+  moTab('Chup'); veHangDoi();
+  nhac(fs.length === 1 ? 'Đang gửi ảnh lên máy chủ ở nền — anh làm việc khác được.' : 'Đang gửi ' + fs.length + ' ảnh lên máy chủ ở nền — anh làm việc khác được.');
+  hdGuiNen();
 }
+function hdGuiNen() {                                      // gửi lần lượt từng ảnh DANG_GUI; lỗi ảnh nào giữ lại ảnh đó (LOI_GUI), ảnh khác vẫn gửi
+  if (HDG.dangGui) return;
+  var p = HDG.ds.filter(function (x) { return x.trang_thai === 'DANG_GUI'; })[0];
+  if (!p) { if (HDG.ds.length && !HDG.ds.some(function (x) { return x.trang_thai === 'LOI_GUI'; })) { HDG.ds = []; } veHangDoi(); return; }
+  HDG.dangGui = true;
+  new Promise(function (res) { nenAnhFile(p.file, res); }).then(function (dataUrl) {
+    if (!dataUrl) throw new Error('ảnh hỏng hoặc không đọc được');
+    return api('ocrNopAnh', { loai: p.loai, ma_da: p.ma_da, ma_kho: p.ma_kho, anh_base64: dataUrl.split(',')[1], mime: 'image/jpeg', thiet_bi: THIET_BI }, 90);
+  }).then(function (kq) {
+    HDG.ds = HDG.ds.filter(function (x) { return x !== p; });
+    HDQ.ds.unshift({ id: kq.id, loai: p.loai, ma_kho: p.ma_kho, email_gui: p.email_gui, ho_ten_gui: p.ho_ten_gui, gui_luc: kq.gui_luc || p.gui_luc, trang_thai: 'CHO', so_dong: 0, xanh: 0, vang: 0, do: 0, ten_ncc: '', loi: '' }); HDQ.dem.CHO++;
+    var con = HDG.ds.filter(function (x) { return x.trang_thai === 'DANG_GUI'; }).length;
+    if (!con) nhac('Đã gửi xong ảnh. AI đọc trong 1–3 phút — xong sẽ có số đỏ ở tab Chụp phiếu để anh kiểm tra & gửi.', 5);
+    HDG.dangGui = false; veHangDoi(); hdGuiNen();
+  }, function (e) {
+    p.trang_thai = 'LOI_GUI'; p.loi = 'Không gửi được: ' + e.message;
+    HDG.dangGui = false; veHangDoi(); hdGuiNen();
+  });
+}
+function guiLaiHangDoi(id) { var p = HDG.ds.filter(function (x) { return x.id === id; })[0]; if (!p) return; p.trang_thai = 'DANG_GUI'; p.loi = ''; veHangDoi(); hdGuiNen(); }
+function boAnhChuaGui(id) { HDG.ds = HDG.ds.filter(function (x) { return x.id !== id; }); veHangDoi(); }
 function maDaHangDoi() { var k = document.getElementById('chonKho').value; var kho = (DL && DL.user.khos || []).filter(function (x) { return x.ma_kho === k; })[0]; return (kho && kho.ma_da) || (DL && DL.user.ma_da) || ''; }
 function taiHangDoi(ngam) {                                // hỏi máy chủ danh sách; ngam = không hiện vòng chờ
   if (!DL || !TOKEN || !navigator.onLine || HDQ.dangTai) return Promise.resolve();
@@ -888,15 +914,17 @@ function veHangDoi() {
   var el = document.getElementById('hdDs'), luc = document.getElementById('hdLuc'); if (!el) return;
   var d = HDQ.dem, bao_ = document.getElementById('tabChupBao');
   if (bao_) { bao_.textContent = d.XONG; bao_.classList.toggle('hien', d.XONG > 0); }
-  luc.textContent = HDQ.luc ? 'Cập nhật ' + HDQ.luc + ' · ' + d.CHO + ' chờ · ' + d.DANG_DOC + ' đang đọc · ' + d.XONG + ' đọc xong · ' + d.LOI + ' lỗi' + (HDQ.xemCa ? ' (cả dự án)' : '') : 'Chưa tải hàng đợi';
-  if (!HDQ.ds.length) { el.innerHTML = '<div class="nho-mo">Không có phiếu nào đang chờ. Chụp / chọn ảnh phiếu ở trên để gửi AI đọc.</div>'; return; }
-  var TT = { CHO: 'CHỜ AI', DANG_DOC: 'ĐANG ĐỌC', XONG: 'ĐỌC XONG', LOI: 'LỖI' };
-  el.innerHTML = HDQ.ds.map(function (p) {
+  var dangGui = HDG.ds.filter(function (x) { return x.trang_thai === 'DANG_GUI'; }).length;                                     // v1.16.1
+  luc.textContent = (dangGui ? dangGui + ' đang gửi · ' : '') + (HDQ.luc ? 'Cập nhật ' + HDQ.luc + ' · ' + d.CHO + ' chờ · ' + d.DANG_DOC + ' đang đọc · ' + d.XONG + ' đọc xong · ' + d.LOI + ' lỗi' + (HDQ.xemCa ? ' (cả dự án)' : '') : 'Chưa tải hàng đợi');
+  var ds = HDG.ds.concat(HDQ.ds);                                                                                              // v1.16.1: ảnh đang gửi nền đứng đầu
+  if (!ds.length) { el.innerHTML = '<div class="nho-mo">Không có phiếu nào đang chờ. Chụp / chọn ảnh phiếu ở trên để gửi AI đọc.</div>'; return; }
+  var TT = { CHO: 'CHỜ AI', DANG_DOC: 'ĐANG ĐỌC', XONG: 'ĐỌC XONG', LOI: 'LỖI', DANG_GUI: '⏫ ĐANG GỬI', LOI_GUI: 'LỖI GỬI' };
+  el.innerHTML = ds.map(function (p) {
     var cuaToi = String(p.email_gui || '').toLowerCase() === String(DL.user.email || '').toLowerCase();
     var tt = '<span class="tem ' + p.trang_thai + '">' + (TT[p.trang_thai] || p.trang_thai) + '</span>';
-    var dong = p.trang_thai === 'XONG' ? ' · ' + p.so_dong + ' dòng <span class="tem XANH">' + p.xanh + '</span> <span class="tem VANG">' + p.vang + '</span> <span class="tem DO">' + p.do + '</span>' + (p.ten_ncc ? ' · ' + esc(p.ten_ncc) : '') : (p.trang_thai === 'LOI' ? '<div class="nho-mo" style="color:var(--do)">' + esc(p.loi) + '</div>' : '');
-    var nut = p.trang_thai === 'XONG' ? '<button class="nut ok nho" style="margin:6px 0 0" onclick="moKetQuaHangDoi(\'' + esc(p.id) + '\')">✅ Kiểm tra & gửi</button>' : (p.trang_thai === 'LOI' ? '<button class="nut nho" style="margin:6px 0 0" onclick="docLaiHangDoi(\'' + esc(p.id) + '\')">↻ Đọc lại</button>' : '');
-    var boNut = p.trang_thai !== 'DANG_DOC' ? '<button class="nut phu nho" style="margin:6px 0 0 6px;color:var(--do)" onclick="boPhieuHangDoi(\'' + esc(p.id) + '\')">🗑 Bỏ</button>' : '';
+    var dong = p.trang_thai === 'XONG' ? ' · ' + p.so_dong + ' dòng <span class="tem XANH">' + p.xanh + '</span> <span class="tem VANG">' + p.vang + '</span> <span class="tem DO">' + p.do + '</span>' + (p.ten_ncc ? ' · ' + esc(p.ten_ncc) : '') : (p.trang_thai === 'LOI' || p.trang_thai === 'LOI_GUI' ? '<div class="nho-mo" style="color:var(--do)">' + esc(p.loi) + '</div>' : '');
+    var nut = p.trang_thai === 'XONG' ? '<button class="nut ok nho" style="margin:6px 0 0" onclick="moKetQuaHangDoi(\'' + esc(p.id) + '\')">✅ Kiểm tra & gửi</button>' : (p.trang_thai === 'LOI' ? '<button class="nut nho" style="margin:6px 0 0" onclick="docLaiHangDoi(\'' + esc(p.id) + '\')">↻ Đọc lại</button>' : (p.trang_thai === 'LOI_GUI' ? '<button class="nut nho" style="margin:6px 0 0" onclick="guiLaiHangDoi(\'' + esc(p.id) + '\')">↻ Gửi lại</button>' : ''));
+    var boNut = p.trang_thai === 'LOI_GUI' ? '<button class="nut phu nho" style="margin:6px 0 0 6px;color:var(--do)" onclick="boAnhChuaGui(\'' + esc(p.id) + '\')">🗑 Bỏ</button>' : (p.trang_thai !== 'DANG_DOC' && p.trang_thai !== 'DANG_GUI' ? '<button class="nut phu nho" style="margin:6px 0 0 6px;color:var(--do)" onclick="boPhieuHangDoi(\'' + esc(p.id) + '\')">🗑 Bỏ</button>' : '');
     return '<div class="hd-item ' + p.trang_thai + '">' + tt + ' <b>' + esc(TEN_LOAI[p.loai] || p.loai) + '</b>' + dong +
       '<div class="nho-mo">' + esc(p.gui_luc) + ' · ' + esc(cuaToi ? 'tôi gửi' : (p.ho_ten_gui || p.email_gui)) + ' · ' + esc(p.ma_kho) + (p.trang_thai === 'XONG' && p.ai_ms ? ' · AI ' + Math.round(p.ai_ms / 1000) + ' s' : '') + '</div>' + nut + boNut + '</div>';
   }).join('');
@@ -1698,8 +1726,9 @@ function nenAnhFile(f, cb) {                              // ảnh → JPEG ≤ 
     var MAX = 1600, w = img.width, h = img.height;
     if (Math.max(w, h) > MAX) { var ty = MAX / Math.max(w, h); w = Math.round(w * ty); h = Math.round(h * ty); }
     var c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(img, 0, 0, w, h);
-    cb(c.toDataURL('image/jpeg', 0.8));
+    cb(c.toDataURL('image/jpeg', 0.8)); try { URL.revokeObjectURL(img.src); } catch (e) { }
   };
+  img.onerror = function () { cb(null); };                 // v1.16.1: ảnh hỏng → báo thay vì treo
   img.src = URL.createObjectURL(f);
 }
 function anhDeNghiChon(ev) {
