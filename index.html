@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.15.1 (GitHub Pages) · 19/09/2026 · đi cùng Code v0.18.0 + OCR v1.8.0
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.16.0 (GitHub Pages) · 20/09/2026 · đi cùng Code v0.19.0 + OCR v1.9.0
+  v1.16.0 (3 đề xuất của anh 20/09):
+    (1) Tồn kho: hàng chip lọc Tất cả / Hết (tồn ≤ 0) / Sắp hết (0 < tồn ≤ tồn tối thiểu hoặc ≤ 10 % nhập lũy kế — máy chủ v0.19 cờ
+        SAP_HET) / Còn nhiều; chip hiện số mã; lọc kết hợp với ô tìm.
+    (2) Tab "Tài khoản" trên thanh dưới (như app báo cáo): họ tên, email, vai trò, dự án + kho, bản app / máy chủ, bật thông báo,
+        làm mới danh mục, tải lại app, đăng xuất. Nút Thoát trên đầu vẫn giữ.
+    (3) OCR NỀN: các nút chụp/chọn ảnh chỉ GỬI ẢNH LÊN (ocrNopAnh, 2–5 s/ảnh, tối đa 10 ảnh) rồi về ngay tab Chụp phiếu; máy chủ
+        (trigger 1 phút, OCR v1.9) tự đọc; app hỏi hàng đợi (ocrHangDoi) mỗi 30 s khi đang mở + lúc mở lại; tab Chụp phiếu có số đỏ
+        "n phiếu AI đã đọc xong", danh sách "Phiếu chờ xác nhận" (CHỜ / ĐANG ĐỌC / XONG / LỖI) — thủ kho và kế toán kho cùng dự án
+        đều thấy; bấm "Kiểm tra & gửi" → ocrKetQua → màn kiểm tra như cũ → Gửi phiếu (kèm hang_doi_id → máy chủ đánh dấu DA_GUI);
+        "Bỏ" → HUY; LỖI → "Đọc lại". Có thông báo hệ thống (Notification API) khi app đang chạy nền mà có phiếu đọc xong.
+        Không còn chế độ "đọc ngay" chờ tại chỗ (anh chốt).
   v1.15.1 (anh báo 19/09: chụp phiếu hay gặp "Gemini HTTP 503 high demand", OCR lâu): app tự gửi lại ảnh 1 lần sau 5 s khi máy chủ báo
     "AI đang quá tải" (máy chủ v1.8 đã tự đổi model/nhà cung cấp trước đó); hộp chờ ghi rõ "thường 10–30 giây"; màn kiểm tra ghi
     dòng nhỏ "AI: gemini · gemini-3.8-flash · 14 s (thử 3 lần)" để đo tốc độ thực tế; lỗi hiện ngắn gọn, không in JSON của Google.
@@ -152,6 +163,14 @@
   .tab button{flex:1;padding:9px 2px 10px;border:0;background:none;font-size:12px;color:#666}
   .tab button.chon{color:var(--xanh);font-weight:700}
   .tab button span{display:block;font-size:20px}
+  .tab button{position:relative}
+  .tab button i.bao{position:absolute;top:4px;left:50%;margin-left:8px;min-width:18px;height:18px;line-height:18px;border-radius:9px;background:var(--do);color:#fff;font-size:11px;font-style:normal;font-weight:700;padding:0 4px;display:none}
+  .tab button i.bao.hien{display:inline-block}
+  .hd-item{border:1px solid var(--vien);border-radius:8px;padding:8px;margin:6px 0;background:#fff}
+  .hd-item.XONG{border-color:var(--ok);background:#f1f8e9} .hd-item.LOI{border-color:var(--do);background:#ffebee} .hd-item.DANG_DOC{background:#e3f2fd}
+  .tem.CHO{background:#888}.tem.DANG_DOC{background:#1565c0}.tem.XONG{background:var(--ok)}.tem.LOI{background:var(--do)}
+  .tk-dong{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-top:1px solid var(--vien);font-size:14px}
+  .tk-dong:first-child{border-top:0} .tk-dong b{text-align:right}
   .anh-phieu{width:100%;max-height:38vh;object-fit:contain;background:#222;border-radius:8px}
   .mo{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;z-index:20}
   .mo.hien{display:flex}
@@ -434,7 +453,13 @@
     <button class="nut" style="background:#0B4F9C" onclick="chup('XUAT')">📤 Xuất vật tư cho tổ đội (phiếu đã ký)</button>
     <input id="fileAnhChup" type="file" accept="image/*" capture="environment" style="display:none" onchange="anhDaChon(event)">
     <input id="fileAnhTai" type="file" accept="image/*" multiple style="display:none" onchange="anhDaChon(event)">
-    <div class="nho-mo">Chụp thẳng, đủ sáng, lấy trọn khung phiếu — hoặc chọn ảnh phiếu đã có trong máy. Ảnh được nén trước khi gửi.</div>
+    <div class="nho-mo">Chụp thẳng, đủ sáng, lấy trọn khung phiếu — hoặc chọn ảnh phiếu đã có trong máy (tối đa 10 ảnh). Ảnh được nén rồi <b>gửi lên máy chủ</b>; AI đọc xong app báo ở đây, không phải đứng chờ.</div>
+  </div>
+  <!-- v1.16: hàng đợi OCR nền -->
+  <div class="the" id="hdKhung">
+    <div style="display:flex;justify-content:space-between;align-items:center"><b>📚 Phiếu AI đang đọc / chờ xác nhận</b><button class="nut phu nho" style="margin:0;padding:4px 10px" onclick="taiHangDoi(false)">🔄</button></div>
+    <div class="nho-mo" id="hdLuc" style="margin:4px 0 6px"></div>
+    <div id="hdDs"></div>
   </div>
 </div>
 
@@ -475,7 +500,8 @@
   </div>
   <div class="the" id="ktDong"></div>
   <button class="nut ok" onclick="guiPhieu()">Gửi phiếu</button>
-  <button class="nut phu" onclick="huyKiemTra()">Hủy (chụp lại)</button>
+  <button class="nut phu" onclick="deSauKiemTra()" id="ktNutDeSau">Để sau (quay lại danh sách)</button>
+  <button class="nut phu" onclick="huyKiemTra()" id="ktNutHuy" style="color:var(--do)">🗑 Bỏ phiếu này</button>
 </div>
 
 <!-- ======================= XUẤT KHO TAY ======================= -->
@@ -504,6 +530,12 @@
   <div class="the">
     <select id="tonKho" onchange="taiTon()"></select>
     <input id="tonTim" placeholder="Tìm vật tư…" oninput="locTon()">
+    <div class="chips" id="tonChips"><!-- v1.16: lọc theo tình trạng -->
+      <button class="chon" onclick="locTonChon('TAT_CA',this)">Tất cả <span id="tonDemTatCa"></span></button>
+      <button onclick="locTonChon('HET',this)">🔴 Hết <span id="tonDemHet"></span></button>
+      <button onclick="locTonChon('SAP_HET',this)">🟠 Sắp hết <span id="tonDemSapHet"></span></button>
+      <button onclick="locTonChon('CON',this)">🟢 Còn nhiều <span id="tonDemCon"></span></button>
+    </div>
     <div class="nho-mo" id="tonLuc"></div>
   </div>
   <div class="the" style="padding:0"><table id="tonBang"><thead><tr><th>Vật tư</th><th>ĐVT</th><th style="text-align:right">Tồn</th></tr></thead><tbody></tbody></table></div>
@@ -567,13 +599,35 @@
   <button class="nut phu" onclick="dong('moChonMa')">Đóng</button>
 </div></div>
 
+<!-- ======================= TÀI KHOẢN (v1.16) ======================= -->
+<div class="man" id="manTaiKhoan">
+  <div class="the">
+    <div style="display:flex;align-items:center;gap:12px"><div style="width:52px;height:52px;border-radius:26px;background:var(--xanh);color:#fff;font-size:22px;font-weight:700;display:flex;align-items:center;justify-content:center" id="tkAvatar">?</div>
+      <div><b id="tkTen" style="font-size:16px"></b><div class="nho-mo" id="tkEmail"></div><div class="nho-mo" id="tkVaiTro"></div></div></div>
+  </div>
+  <div class="the">
+    <div class="tk-dong"><span>Dự án</span><b id="tkDuAn"></b></div>
+    <div class="tk-dong"><span>Kho / bãi được giao</span><b id="tkKho"></b></div>
+    <div class="tk-dong"><span>Bản app</span><b id="tkBanApp"></b></div>
+    <div class="tk-dong"><span>Máy chủ</span><b id="tkMayChu">…</b></div>
+    <div class="tk-dong"><span>Danh mục vật tư</span><b id="tkDanhMuc"></b></div>
+    <div class="tk-dong"><span>Thông báo AI đọc xong</span><b id="tkThongBao"></b></div>
+  </div>
+  <button class="nut" onclick="batThongBao()" id="tkNutThongBao">🔔 Bật thông báo khi AI đọc xong phiếu</button>
+  <button class="nut phu" onclick="lamMoiDanhMucNhanh()">↻ Làm mới danh mục vật tư</button>
+  <button class="nut phu" onclick="taiLaiApp()">⟳ Tải lại app (nhận bản mới)</button>
+  <button class="nut do" onclick="dangXuat()">Đăng xuất</button>
+  <div class="nho-mo" style="text-align:center;margin-top:8px">App Kho công trường LICOGI13FC · <a href="huong-dan-cai-dat.html">Hướng dẫn cài app</a></div>
+</div>
+
 <!-- Thanh tab -->
 <div class="tab" id="thanhTab" style="display:none">
   <button id="tabTongQuan" onclick="moTab('TongQuan')"><span>🏗️</span>Tổng quan</button>
-  <button id="tabChup" onclick="moTab('Chup')"><span>📷</span>Chụp phiếu</button>
+  <button id="tabChup" onclick="moTab('Chup')"><span>📷</span>Chụp phiếu<i class="bao" id="tabChupBao"></i></button>
   <button id="tabXuat" onclick="moTab('Xuat')"><span>🧾</span>Xuất kho</button>
   <button id="tabTon" onclick="moTab('Ton')"><span>📊</span>Tồn kho</button>
   <button id="tabDuyet" onclick="moTab('Duyet')" style="display:none"><span>✅</span>Duyệt</button>
+  <button id="tabTaiKhoan" onclick="moTab('TaiKhoan')"><span>👤</span>Tài khoản</button>
 </div>
 
 <script>
@@ -594,7 +648,7 @@ var CHUA_CO_API = !CONFIG.API_URL || CONFIG.API_URL.indexOf('DAN_URL') === 0;
    Apps Script quá tải / lỗi tạm thời → trước đây app báo "Máy chủ trả về dữ liệu không hợp lệ". Nay: thử lại tối đa 3 lần
    (chờ 1,5 s → 3 s → 6 s), báo tiến trình trên hộp "Đang xử lý". Hành động GHI gửi kèm yc_id (mã duy nhất mỗi lần bấm):
    máy chủ v0.17.2 nhớ kết quả theo yc_id nên thử lại không tạo phiếu trùng / duyệt 2 lần. */
-var API_GHI = { ocrPhieu: 1, taoMaTam: 1, guiPhieuOcr: 1, xuatTay: 1, chuyenXeLuu: 1, deNghiLuu: 1, deNghiBuoc: 1, deNghiAnh: 1, duyet: 1, suaPhieu: 1, daKiemMau: 1, vatLieuTay: 1 };
+var API_GHI = { ocrPhieu: 1, ocrNopAnh: 1, ocrHangDoiCapNhat: 1, taoMaTam: 1, guiPhieuOcr: 1, xuatTay: 1, chuyenXeLuu: 1, deNghiLuu: 1, deNghiBuoc: 1, deNghiAnh: 1, duyet: 1, suaPhieu: 1, daKiemMau: 1, vatLieuTay: 1 };
 var API_THU_LAI = 3, API_CHO_MS = [1500, 3000, 6000];
 function apiMaYc() { return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10) + '-' + Math.random().toString(36).slice(2, 6); }
 function apiChu(msg) {                                     // ghi tiến trình thử lại lên hộp Đang xử lý (nếu đang hiện), không mở hộp mới
@@ -685,7 +739,7 @@ function tai(b, chu) {                                   // v1.2: hiện số gi
 }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 function moTab(t) {
-  ['TongQuan', 'DeNghi', 'LapDeNghi', 'Chup', 'Xuat', 'Ton', 'Duyet', 'Login', 'KiemTra'].forEach(function (x) {
+  ['TongQuan', 'DeNghi', 'LapDeNghi', 'Chup', 'Xuat', 'Ton', 'Duyet', 'Login', 'KiemTra', 'TaiKhoan'].forEach(function (x) {
     var m = document.getElementById('man' + x); if (m) m.classList.remove('hien');
     var b = document.getElementById('tab' + x); if (b) b.classList.remove('chon');
   });
@@ -695,6 +749,8 @@ function moTab(t) {
   if (t === 'Duyet') taiChoDuyet();
   if (t === 'TongQuan') { apDungKhoiTq(); taiHangThue(); taiDeNghi(true); taiChiPhi(); }   // v1.8: thêm chi phí thuê
   if (t === 'DeNghi') taiDeNghi(false);
+  if (t === 'Chup') taiHangDoi(true);                                                              // v1.16: hàng đợi OCR nền
+  if (t === 'TaiKhoan') veTaiKhoan();                                                              // v1.16
 }
 function dong(id) { document.getElementById(id).classList.remove('hien'); }
 function bao(msg) { alert(msg); }
@@ -773,6 +829,7 @@ function batDau(kq) {
     document.getElementById('btnThoat').style.display = '';
     var manHienTai = document.querySelector('.man.hien');
     if (!manHienTai || manHienTai.id === 'manLogin') moTab('TongQuan');   // v1.4: mở app vào Tổng quan; đang ở tab khác (tải ngầm) thì giữ nguyên
+    hdBatDauTheoDoi();                                                     // v1.16: hỏi hàng đợi OCR mỗi 30 s
 }
 
 /* ================= chụp + nén ảnh ================= */
@@ -786,54 +843,104 @@ function layAnh(nguon) {
   dong('moNguonAnh');
   var inp = document.getElementById('fileAnh' + nguon); inp.value = ''; inp.click();
 }
-var HD = { ds: [], i: 0 };                              // v1.7: hàng đợi ảnh phiếu (mỗi ảnh = 1 phiếu)
+/* ---- v1.16: OCR NỀN — chọn ảnh → nén → GỬI LÊN hàng đợi máy chủ (ocrNopAnh); máy chủ đọc; app hỏi hàng đợi (ocrHangDoi) ---- */
+var HD = { ds: [], i: 0, kho: '', loai: '' };            // giữ tên cũ: HD.kho = kho chốt lúc chọn ảnh (guiPhieu dùng)
 var HD_TOI_DA = 10;
+var HDQ = { ds: [], dem: { CHO: 0, DANG_DOC: 0, XONG: 0, LOI: 0 }, luc: '', xongTruoc: null, dangTai: false, hen: null };
 function anhDaChon(ev) {
   var fs = Array.prototype.slice.call(ev.target.files || []); if (!fs.length) return;
   if (fs.length > HD_TOI_DA) { bao('Chọn tối đa ' + HD_TOI_DA + ' ảnh một lần — app lấy ' + HD_TOI_DA + ' ảnh đầu.'); fs = fs.slice(0, HD_TOI_DA); }
-  HD = { ds: fs.map(function (f) { return { file: f }; }), i: 0, loai: loaiDangChup, kho: document.getElementById('chonKho').value };
-  moPhieuHangDoi(0);
+  nopAnhHangDoi(fs, loaiDangChup, document.getElementById('chonKho').value);
 }
-function docOcrHangDoi(j) {                                // nén + AI đọc ảnh thứ j; gọi 2 lần chỉ chạy 1 lần
-  var x = HD.ds[j]; if (!x) return Promise.resolve(null); if (x.p) return x.p;
-  x.p = new Promise(function (res) { nenAnhFile(x.file, res); }).then(function (dataUrl) {
-    x.dataUrl = dataUrl;
-    var goi = function (lan) {                                                                          // v1.15.1: AI quá tải → gửi lại 1 lần sau 5 s
-      return api('ocrPhieu', { loai: HD.loai, ma_da: DL.user.ma_da, ma_kho: HD.kho, anh_base64: dataUrl.split(',')[1], mime: 'image/jpeg', thiet_bi: THIET_BI }, 150)
-        .catch(function (e) {
-          if (lan === 0 && /AI .*quá tải|đang quá tải/i.test(e.message || '')) {
-            apiChu('AI đang quá tải — app tự gửi lại lần 2 sau 5 giây…');
-            return new Promise(function (r) { setTimeout(r, 5000); }).then(function () { return goi(1); });
-          }
-          throw e;
-        });
-    };
-    return goi(0);
-  }).then(function (kq) { x.kq = kq; return x; }, function (e) { x.loi = e.message; return x; });
-  return x.p;
-}
-function moPhieuHangDoi(j) {
-  HD.i = j; var n = HD.ds.length;
-  tai(true, n > 1 ? 'AI đang đọc phiếu ' + (j + 1) + '/' + n + ' (thường 10–30 giây mỗi phiếu)…' : 'AI đang đọc phiếu (thường 10–30 giây)…');
-  docOcrHangDoi(j).then(function (x) {
-    tai(false);
-    if (j + 1 < n) docOcrHangDoi(j + 1).then(function () { var el = document.getElementById('hdChu'); if (el && HD.i === j) el.outerHTML = chuHangDoi(); });   // đọc trước phiếu kế; xong thì cập nhật dòng trạng thái
-    if (x.loi) {
-      var conLai = n - j - 1;
-      if (conLai > 0 && confirm('AI không đọc được ảnh ' + (j + 1) + '/' + n + ' (' + x.loi + ').\nBỏ qua ảnh này và sang ảnh kế?')) return phieuTiepTheo();
-      bao((/quá tải/i.test(x.loi) ? x.loi : 'AI không đọc được (' + x.loi + ').') + '\nAnh có thể thử chụp lại hoặc lập phiếu bằng tab Xuất kho / nhập tay trên Sheets.');   // v1.15.1: lỗi quá tải đã có hướng dẫn sẵn
-      return ketThucHangDoi();
+function nopAnhHangDoi(fs, loai, kho) {                    // gửi lần lượt từng ảnh; lỗi ảnh nào báo ảnh đó, ảnh khác vẫn gửi
+  var n = fs.length, daGui = 0, loi = [];
+  tai(true, 'Đang gửi ảnh 1/' + n + ' lên máy chủ…');
+  function guiTiep(j) {
+    if (j >= n) {
+      tai(false);
+      bao((daGui ? 'Đã gửi ' + daGui + '/' + n + ' ảnh. AI sẽ đọc xong trong khoảng 1–3 phút — app báo ở tab Chụp phiếu (số đỏ), anh vào "Kiểm tra & gửi" từng phiếu.' : 'Chưa gửi được ảnh nào.') + (loi.length ? '\nKhông gửi được: ' + loi.join('; ') : ''));
+      taiHangDoi(true); moTab('Chup');
+      return;
     }
-    document.getElementById('ktAnh').src = x.dataUrl; OCR = x.kq; veKiemTra();
-  });
+    apiChu('Đang gửi ảnh ' + (j + 1) + '/' + n + ' lên máy chủ…');
+    new Promise(function (res) { nenAnhFile(fs[j], res); }).then(function (dataUrl) {
+      return api('ocrNopAnh', { loai: loai, ma_da: DL.user.ma_da, ma_kho: kho, anh_base64: dataUrl.split(',')[1], mime: 'image/jpeg', thiet_bi: THIET_BI }, 90);
+    }).then(function (kq) { daGui++; HDQ.ds.unshift({ id: kq.id, loai: loai, ma_kho: kho, email_gui: DL.user.email, ho_ten_gui: DL.user.ho_ten, gui_luc: kq.gui_luc || '', trang_thai: 'CHO', so_dong: 0, xanh: 0, vang: 0, do: 0, ten_ncc: '', loi: '' }); HDQ.dem.CHO++; veHangDoi(); guiTiep(j + 1); },
+      function (e) { loi.push('ảnh ' + (j + 1) + ': ' + e.message); guiTiep(j + 1); });
+  }
+  guiTiep(0);
 }
-function phieuTiepTheo() { var j = HD.i + 1; if (j < HD.ds.length) moPhieuHangDoi(j); else ketThucHangDoi(); }
-function ketThucHangDoi() { var n = HD.ds.length; HD = { ds: [], i: 0 }; OCR = null; moTab('Chup'); return n; }
-function chuHangDoi() {                                    // dòng "Phiếu 2/5" trên màn kiểm tra
-  var n = HD.ds.length; if (n <= 1) return '';
-  var sau = HD.ds[HD.i + 1], tt = !sau ? '' : sau.kq ? ' · phiếu kế đã đọc xong' : sau.loi ? ' · phiếu kế AI không đọc được' : ' · đang đọc trước phiếu kế…';
-  return '<div class="canh-bao" id="hdChu" style="background:#e3f2fd;border-color:#90caf9">📚 Phiếu <b>' + (HD.i + 1) + '/' + n + '</b> · còn ' + (n - HD.i - 1) + ' ảnh chờ' + tt + '</div>';
+function maDaHangDoi() { var k = document.getElementById('chonKho').value; var kho = (DL && DL.user.khos || []).filter(function (x) { return x.ma_kho === k; })[0]; return (kho && kho.ma_da) || (DL && DL.user.ma_da) || ''; }
+function taiHangDoi(ngam) {                                // hỏi máy chủ danh sách; ngam = không hiện vòng chờ
+  if (!DL || !TOKEN || !navigator.onLine || HDQ.dangTai) return Promise.resolve();
+  HDQ.dangTai = true;
+  if (!ngam) tai(true, 'Đang tải hàng đợi…');
+  return api('ocrHangDoi', { ma_da: maDaHangDoi(), ma_kho: document.getElementById('chonKho').value }, 60).then(function (kq) {
+    HDQ.dangTai = false; if (!ngam) tai(false);
+    var xongCu = HDQ.xongTruoc;
+    HDQ.ds = kq.ds || []; HDQ.dem = kq.dem || HDQ.dem; HDQ.luc = kq.luc || ''; HDQ.xemCa = !!kq.xem_ca;
+    veHangDoi();
+    if (xongCu !== null && HDQ.dem.XONG > xongCu) hdThongBao(HDQ.dem.XONG);
+    HDQ.xongTruoc = HDQ.dem.XONG;
+  }).catch(function (e) { HDQ.dangTai = false; if (!ngam) { tai(false); bao('Không tải được hàng đợi: ' + e.message); } });
 }
+function veHangDoi() {
+  var el = document.getElementById('hdDs'), luc = document.getElementById('hdLuc'); if (!el) return;
+  var d = HDQ.dem, bao_ = document.getElementById('tabChupBao');
+  if (bao_) { bao_.textContent = d.XONG; bao_.classList.toggle('hien', d.XONG > 0); }
+  luc.textContent = HDQ.luc ? 'Cập nhật ' + HDQ.luc + ' · ' + d.CHO + ' chờ · ' + d.DANG_DOC + ' đang đọc · ' + d.XONG + ' đọc xong · ' + d.LOI + ' lỗi' + (HDQ.xemCa ? ' (cả dự án)' : '') : 'Chưa tải hàng đợi';
+  if (!HDQ.ds.length) { el.innerHTML = '<div class="nho-mo">Không có phiếu nào đang chờ. Chụp / chọn ảnh phiếu ở trên để gửi AI đọc.</div>'; return; }
+  var TT = { CHO: 'CHỜ AI', DANG_DOC: 'ĐANG ĐỌC', XONG: 'ĐỌC XONG', LOI: 'LỖI' };
+  el.innerHTML = HDQ.ds.map(function (p) {
+    var cuaToi = String(p.email_gui || '').toLowerCase() === String(DL.user.email || '').toLowerCase();
+    var tt = '<span class="tem ' + p.trang_thai + '">' + (TT[p.trang_thai] || p.trang_thai) + '</span>';
+    var dong = p.trang_thai === 'XONG' ? ' · ' + p.so_dong + ' dòng <span class="tem XANH">' + p.xanh + '</span> <span class="tem VANG">' + p.vang + '</span> <span class="tem DO">' + p.do + '</span>' + (p.ten_ncc ? ' · ' + esc(p.ten_ncc) : '') : (p.trang_thai === 'LOI' ? '<div class="nho-mo" style="color:var(--do)">' + esc(p.loi) + '</div>' : '');
+    var nut = p.trang_thai === 'XONG' ? '<button class="nut ok nho" style="margin:6px 0 0" onclick="moKetQuaHangDoi(\'' + esc(p.id) + '\')">✅ Kiểm tra & gửi</button>' : (p.trang_thai === 'LOI' ? '<button class="nut nho" style="margin:6px 0 0" onclick="docLaiHangDoi(\'' + esc(p.id) + '\')">↻ Đọc lại</button>' : '');
+    var boNut = p.trang_thai !== 'DANG_DOC' ? '<button class="nut phu nho" style="margin:6px 0 0 6px;color:var(--do)" onclick="boPhieuHangDoi(\'' + esc(p.id) + '\')">🗑 Bỏ</button>' : '';
+    return '<div class="hd-item ' + p.trang_thai + '">' + tt + ' <b>' + esc(TEN_LOAI[p.loai] || p.loai) + '</b>' + dong +
+      '<div class="nho-mo">' + esc(p.gui_luc) + ' · ' + esc(cuaToi ? 'tôi gửi' : (p.ho_ten_gui || p.email_gui)) + ' · ' + esc(p.ma_kho) + (p.trang_thai === 'XONG' && p.ai_ms ? ' · AI ' + Math.round(p.ai_ms / 1000) + ' s' : '') + '</div>' + nut + boNut + '</div>';
+  }).join('');
+}
+function hdBatDauTheoDoi() {                              // hỏi hàng đợi mỗi 30 s khi app đang mở; ngay khi mở lại app
+  clearInterval(HDQ.hen);
+  HDQ.hen = setInterval(function () { if (document.visibilityState === 'visible') taiHangDoi(true); }, 30000);
+  setTimeout(function () { taiHangDoi(true); }, 800);
+}
+document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && DL) taiHangDoi(true); });
+function hdThongBao(n) {                                  // thông báo hệ thống khi app đang chạy nền (cần cấp quyền ở tab Tài khoản)
+  try {
+    if (document.visibilityState === 'visible') return;
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    new Notification('AI đã đọc xong ' + n + ' phiếu', { body: 'Mở app Kho → Chụp phiếu → Kiểm tra & gửi', icon: 'icons/icon-192.png', tag: 'kho-ocr' });
+  } catch (e) { }
+}
+function batThongBao() {
+  if (!('Notification' in window)) return bao('Trình duyệt / bản cài này không hỗ trợ thông báo. App vẫn hiện số đỏ ở tab Chụp phiếu khi mở.');
+  Notification.requestPermission().then(function (p) { veTaiKhoan(); bao(p === 'granted' ? 'Đã bật thông báo. Khi app chạy nền mà AI đọc xong phiếu, điện thoại sẽ báo.' : 'Chưa được cấp quyền thông báo (' + p + ').'); });
+}
+function moKetQuaHangDoi(id) {
+  tai(true, 'Đang tải kết quả AI…');
+  api('ocrKetQua', { id: id, ma_da: maDaHangDoi(), ma_kho: document.getElementById('chonKho').value }, 90).then(function (kq) {
+    tai(false);
+    OCR = kq; HD = { ds: [], i: 0, kho: kq.ma_kho || document.getElementById('chonKho').value, loai: kq.loai };
+    document.getElementById('ktAnh').src = 'data:' + (kq.anh_mime || 'image/jpeg') + ';base64,' + kq.anh_base64;
+    veKiemTra();
+  }).catch(function (e) { tai(false); bao('Không mở được phiếu: ' + e.message); taiHangDoi(true); });
+}
+function boPhieuHangDoi(id) {
+  if (!confirm('Bỏ phiếu này khỏi hàng đợi? Ảnh vẫn còn trên Drive nhưng không đọc / không ghi sổ.')) return;
+  tai(true, 'Đang bỏ phiếu…');
+  api('ocrHangDoiCapNhat', { id: id, trang_thai: 'HUY', ma_da: maDaHangDoi(), ma_kho: document.getElementById('chonKho').value, thiet_bi: THIET_BI }, 60)
+    .then(function () { tai(false); HDQ.ds = HDQ.ds.filter(function (p) { return p.id !== id; }); veHangDoi(); taiHangDoi(true); })
+    .catch(function (e) { tai(false); bao(e.message); });
+}
+function docLaiHangDoi(id) {
+  tai(true, 'Đang gửi đọc lại…');
+  api('ocrHangDoiCapNhat', { id: id, trang_thai: 'CHO', ma_da: maDaHangDoi(), ma_kho: document.getElementById('chonKho').value, thiet_bi: THIET_BI }, 60)
+    .then(function () { tai(false); taiHangDoi(true); }).catch(function (e) { tai(false); bao(e.message); });
+}
+function chuHangDoi() { return OCR && OCR.hang_doi_id ? '<div class="canh-bao" id="hdChu" style="background:#e3f2fd;border-color:#90caf9">📚 Phiếu từ hàng đợi AI · gửi lúc ' + esc(OCR.gui_luc || '') + (OCR.email_gui && OCR.email_gui !== DL.user.email ? ' · người gửi ' + esc(OCR.email_gui) : '') + '</div>' : ''; }
+function deSauKiemTra() { OCR = null; moTab('Chup'); }
 
 /* ================= màn kiểm tra ================= */
 function veKiemTra() {
@@ -1042,10 +1149,9 @@ function taoMaTam() {
     dong('moChonMa'); veDongOcr();
   }).catch(function (e) { tai(false); bao(e.message); });
 }
-function huyKiemTra() {
-  var conLai = HD.ds.length - HD.i - 1;
-  if (conLai > 0) { if (confirm('Bỏ phiếu này. Còn ' + conLai + ' ảnh chưa xử lý — tiếp tục với ảnh kế?\n(Bấm Hủy để bỏ cả hàng đợi)')) return phieuTiepTheo(); }
-  ketThucHangDoi();
+function huyKiemTra() {                                  // v1.16: bỏ phiếu khỏi hàng đợi (HUY); không muốn bỏ → "Để sau"
+  if (OCR && OCR.hang_doi_id) { var id = OCR.hang_doi_id; OCR = null; moTab('Chup'); return boPhieuHangDoi(id); }
+  OCR = null; moTab('Chup');
 }
 function guiPhieu() {
   var k = OCR.ket_qua;
@@ -1060,7 +1166,7 @@ function guiPhieu() {
   tai(true, 'Đang ghi phiếu…');
   api('guiPhieuOcr', {
     loai: k.loai, ma_da: DL.user.ma_da, ma_kho: HD.kho || document.getElementById('chonKho').value,   // v1.7: kho chốt lúc chọn ảnh
-    thiet_bi: THIET_BI, ocr_id: OCR.ocr_id, ai_doc_goc: OCR.ai_doc_goc,
+    thiet_bi: THIET_BI, ocr_id: OCR.ocr_id, ai_doc_goc: OCR.ai_doc_goc, hang_doi_id: OCR.hang_doi_id || '',   // v1.16: máy chủ đánh dấu DA_GUI
     header: { ma_dt: maDt, so_phieu_ncc: document.getElementById('ktSoPhieu').value,
       ngay_tren_phieu: k.header.ngay_tren_phieu, nguoi_giao: document.getElementById('ktNguoiGiao').value,
       bien_so_xe: k.header.bien_so_xe, mst_tren_phieu: k.header.mst_tren_phieu,
@@ -1074,9 +1180,11 @@ function guiPhieu() {
       mau: d.mau, tin_cay: d.tin_cay, thu_kho_sua: !!d.thu_kho_sua, vi_tri_luu: d.vi_tri_luu || '', ghi_chu: '', co: d.co || [] }; })
   }, 90).then(function (kq) {
     tai(false);
-    var conLai = HD.ds.length - HD.i - 1;
-    bao('Đã ghi phiếu ' + kq.so_phieu + '\nTrạng thái: ' + (kq.trang_thai === 'DA_DUYET' ? 'TỰ ĐỘNG DUYỆT' + (kq.kiem_mau ? ' (kế toán sẽ kiểm mẫu)' : '') : 'CHỜ KẾ TOÁN DUYỆT') + (kq.van_chuyen ? '\nXe: ' + kq.van_chuyen : '') + (conLai > 0 ? '\n→ Sang phiếu ' + (HD.i + 2) + '/' + HD.ds.length : ''));
-    OCR = null; phieuTiepTheo();                             // v1.7: còn ảnh trong hàng đợi thì mở phiếu kế
+    var idHd = OCR && OCR.hang_doi_id;
+    if (idHd) { HDQ.ds = HDQ.ds.filter(function (p) { return p.id !== idHd; }); HDQ.dem.XONG = Math.max(0, HDQ.dem.XONG - 1); HDQ.xongTruoc = HDQ.dem.XONG; veHangDoi(); }
+    var conLai = HDQ.dem.XONG;
+    bao('Đã ghi phiếu ' + kq.so_phieu + '\nTrạng thái: ' + (kq.trang_thai === 'DA_DUYET' ? 'TỰ ĐỘNG DUYỆT' + (kq.kiem_mau ? ' (kế toán sẽ kiểm mẫu)' : '') : 'CHỜ KẾ TOÁN DUYỆT') + (kq.van_chuyen ? '\nXe: ' + kq.van_chuyen : '') + (conLai > 0 ? '\n→ Còn ' + conLai + ' phiếu AI đã đọc xong chờ anh kiểm tra' : ''));
+    OCR = null; moTab('Chup'); taiHangDoi(true);            // v1.16: về danh sách hàng đợi
   }).catch(function (e) { tai(false); bao('Lỗi: ' + e.message); });
 }
 
@@ -1780,14 +1888,48 @@ function taiTon(ngam) {                                  // v1.2: nhớ tồn t�
     if (doi || !cu) locTon();
   }).catch(function (e) { tai(false); if (!cu && !ngam) bao(e.message); else if (cu) document.getElementById('tonLuc').textContent = 'Tính lúc ' + cu.luc + ' · ' + cu.tong + ' mã · ⚠ chưa làm mới được'; });
 }
+var TON_LOC = 'TAT_CA';                                   // v1.16: TAT_CA | HET | SAP_HET | CON
+function tonNhom(r) { return r.ton <= 0 ? 'HET' : (r.canh_bao === 'SAP_HET' ? 'SAP_HET' : 'CON'); }
+function locTonChon(k, nut) { TON_LOC = k; document.querySelectorAll('#tonChips button').forEach(function (b) { b.classList.toggle('chon', b === nut); }); locTon(); }
 function locTon() {
   var q = boDau(document.getElementById('tonTim').value);
+  var dem = { TAT_CA: tonRows.length, HET: 0, SAP_HET: 0, CON: 0 }; tonRows.forEach(function (r) { dem[tonNhom(r)]++; });
+  document.getElementById('tonDemTatCa').textContent = dem.TAT_CA ? '(' + dem.TAT_CA + ')' : '';
+  document.getElementById('tonDemHet').textContent = dem.HET ? '(' + dem.HET + ')' : '';
+  document.getElementById('tonDemSapHet').textContent = dem.SAP_HET ? '(' + dem.SAP_HET + ')' : '';
+  document.getElementById('tonDemCon').textContent = dem.CON ? '(' + dem.CON + ')' : '';
   document.querySelector('#tonBang tbody').innerHTML = tonRows
-    .filter(function (r) { return !q || boDau(r.ten_vt + r.ma_vt).indexOf(q) >= 0; })
+    .filter(function (r) { return (TON_LOC === 'TAT_CA' || tonNhom(r) === TON_LOC) && (!q || boDau(r.ten_vt + r.ma_vt).indexOf(q) >= 0); })
     .map(function (r) {
       return '<tr' + (r.canh_bao ? ' style="background:#fff3e0"' : '') + '><td>' + esc(r.ten_vt) + '<br><span class="nho-mo">' + esc(r.ma_vt) + '</span></td><td>' + esc(r.don_vi) + '</td>' +
         '<td style="text-align:right"><b>' + r.ton + '</b>' + (r.canh_bao ? '<br><span class="tem DO">' + r.canh_bao + '</span>' : '') + '</td></tr>';
     }).join('');
+}
+
+/* ================= v1.16: tài khoản ================= */
+function veTaiKhoan() {
+  if (!DL) return;
+  var u = DL.user, ten = u.ho_ten || u.email;
+  document.getElementById('tkAvatar').textContent = String(ten).trim().split(/\s+/).pop().charAt(0).toUpperCase() || '?';
+  document.getElementById('tkTen').textContent = ten; document.getElementById('tkEmail').textContent = u.email;
+  var VT = { THU_KHO: 'Thủ kho', KE_TOAN_KHO: 'Kế toán kho', CHT: 'Chỉ huy trưởng', PCH: 'Phó chỉ huy', ADMIN: 'Quản trị' };
+  document.getElementById('tkVaiTro').textContent = 'Vai trò: ' + (VT[u.vai_tro] || u.vai_tro);
+  var daTen = (DL.du_an || []).filter(function (d) { return d.ma_da === u.ma_da; })[0];
+  document.getElementById('tkDuAn').textContent = (daTen ? daTen.ten_da + ' · ' : '') + (u.ma_da || '') + (u.ma_da === 'TAT_CA' || (DL.du_an || []).length > 1 ? ' (' + (DL.du_an || []).length + ' công trình)' : '');
+  document.getElementById('tkKho').innerHTML = (u.khos || []).map(function (k) { return esc(k.ten_kho || k.ma_kho); }).join('<br>') || '—';
+  document.getElementById('tkBanApp').textContent = CONFIG.VERSION;
+  document.getElementById('tkDanhMuc').textContent = (DL.vat_tu || []).length + ' mã' + (DL.dm_ver ? ' · ' + DL.dm_ver : '');
+  var tb = !('Notification' in window) ? 'Không hỗ trợ' : (Notification.permission === 'granted' ? 'Đã bật' : (Notification.permission === 'denied' ? 'Bị chặn (mở cài đặt trình duyệt)' : 'Chưa bật'));
+  document.getElementById('tkThongBao').textContent = tb;
+  document.getElementById('tkNutThongBao').style.display = ('Notification' in window) && Notification.permission !== 'granted' ? '' : 'none';
+  if (navigator.onLine) api('ping', {}, 20).then(function (k) { document.getElementById('tkMayChu').textContent = 'Code v' + k.phien_ban + ' · ' + k.luc; }).catch(function (e) { document.getElementById('tkMayChu').textContent = 'không nối được'; });
+  else document.getElementById('tkMayChu').textContent = 'không có mạng';
+}
+function taiLaiApp() {
+  tai(true, 'Đang tải lại app…');
+  var xong = function () { location.reload(); };
+  if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations) navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.update().catch(function () { }); })); }).then(xong, xong);
+  else xong();
 }
 
 /* ================= duyệt ================= */
