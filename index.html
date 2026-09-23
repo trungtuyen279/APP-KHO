@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.17.0 (GitHub Pages) · 23/09/2026 · đi cùng Code v0.20.0 + OCR v1.9.1
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.18.0 (GitHub Pages) · 23/09/2026 · đi cùng Code v0.21.0 + OCR v1.9.1
+  v1.18.0 (anh yêu cầu 23/09): màn Tồn kho — CHẠM 1 VẬT TƯ → thẻ kho cuộn từ dưới lên (hành động theKho): tồn đầu kỳ + ngày chốt,
+     từng dòng nhập / xuất / kiểm kê đã duyệt (mới nhất trên cùng: ngày, số phiếu, NCC / tổ đội, đầu việc, người nhận, ± số lượng,
+     tồn sau), tổng nhập / xuất / tồn; nhớ theo kho + mã trong phiên, nút ↻ tải lại; chạm số phiếu → xem ảnh phiếu (như màn duyệt).
   v1.17.0 (anh góp ý 23/09: hộp thuê hiện cây, hợp đồng tính md → khó kiểm soát): màn Hàng thuê hiện CÂY + MD SONG SONG —
      mã nào hợp đồng NCC tính theo md (Code v0.20 đọc GIA_THUE, he_so = chiều dài) thì dưới số cây hiện "≈ … md"; cuối bảng mỗi NCC
      thêm dòng tổng theo hợp đồng ("Hộp 50 x 50 — theo HĐ (md)": nhận / trả / còn / % trả tính bằng md). Mã không có giá md → như cũ.
@@ -190,6 +193,11 @@
   .tai{position:fixed;inset:0;background:rgba(255,255,255,.85);display:none;z-index:30;text-align:center;padding-top:38vh;font-weight:600}
   .tai.hien{display:block}
   .nho-mo.md{color:#b45309;font-weight:600}
+.tkv{display:flex;gap:8px;padding:8px 6px;border-bottom:1px solid var(--vien);align-items:flex-start}
+.tkv .ng{flex:0 0 78px;font-size:12px;color:#555;line-height:1.35}.tkv .nd{flex:1;min-width:0;font-size:13px;line-height:1.35}.tkv .nd .p{color:#1a56db;font-weight:600}
+.tkv .sl{flex:0 0 92px;text-align:right;line-height:1.35}.tkv .sl b{font-size:15px}.tkv .sl small{display:block;color:#777;font-size:11px}
+.tkv.NHAP .sl b{color:#1b7f3b}.tkv.XUAT .sl b{color:#b3261e}.tkv.KIEM_KE .sl b{color:#7a1f1f}.tkv.DAU_KY{background:#f4f6f9}
+#tonBang tbody tr{cursor:pointer}
 .nho-mo{font-size:12px;color:#777}
   .ds-item{padding:10px;border:1px solid var(--vien);border-radius:8px;margin:6px 0;background:#fff}
   tr.da-sua td{background:#e3f2fd} tr.bo-dong td{text-decoration:line-through;opacity:.55}
@@ -385,6 +393,16 @@
   <div class="nho-mo" id="htTomTat" style="margin-bottom:8px"></div>
   <div style="overflow-x:auto"><table id="htBang"><thead><tr><th>Loại vật tư</th><th>ĐVT</th><th style="text-align:right">Tổng nhận</th><th style="text-align:right">Tổng trả</th><th style="text-align:right">Còn lại</th><th style="text-align:right">% trả</th></tr></thead><tbody></tbody></table></div>
   <button class="nut phu" onclick="dong('moHangThue')">Đóng</button>
+</div></div>
+
+<!-- v1.18: thẻ kho 1 vật tư -->
+<div class="mo" id="moTheKho"><div>
+  <h3 id="tkvTieuDe" style="margin:0 0 2px"></h3>
+  <div class="nho-mo" id="tkvMa" style="margin-bottom:8px"></div>
+  <div class="tq-tong" id="tkvTong"></div>
+  <div class="nho-mo" id="tkvLuc" style="margin:6px 0"></div>
+  <div id="tkvDs"></div>
+  <div style="display:flex;gap:8px;margin-top:8px"><button class="nut phu" style="flex:1" onclick="dong('moTheKho')">Đóng</button><button class="nut phu" style="flex:0 0 auto" onclick="moTheKho(TKV.ma_vt, true)">↻ Tải lại</button></div>
 </div></div>
 
 <!-- ======================= PHIẾU ĐỀ NGHỊ VẬT TƯ (v1.5) ======================= -->
@@ -1943,9 +1961,50 @@ function locTon() {
   document.querySelector('#tonBang tbody').innerHTML = tonRows
     .filter(function (r) { return (TON_LOC === 'TAT_CA' || tonNhom(r) === TON_LOC) && (!q || boDau(r.ten_vt + r.ma_vt).indexOf(q) >= 0); })
     .map(function (r) {
-      return '<tr' + (r.canh_bao ? ' style="background:#fff3e0"' : '') + '><td>' + esc(r.ten_vt) + '<br><span class="nho-mo">' + esc(r.ma_vt) + '</span></td><td>' + esc(r.don_vi) + '</td>' +
+      return '<tr onclick="moTheKho(\'' + esc(r.ma_vt) + '\')"' + (r.canh_bao ? ' style="background:#fff3e0"' : '') + '><td>' + esc(r.ten_vt) + '<br><span class="nho-mo">' + esc(r.ma_vt) + '</span></td><td>' + esc(r.don_vi) + '</td>' +
         '<td style="text-align:right"><b>' + r.ton + '</b>' + (r.canh_bao ? '<br><span class="tem DO">' + r.canh_bao + '</span>' : '') + '</td></tr>';
     }).join('');
+}
+
+/* ================= v1.18: thẻ kho 1 vật tư ================= */
+var TKV = { ma_vt: '', kho: '', cache: {} };
+function moTheKho(maVt, taiLai) {
+  var kho = document.getElementById('tonKho').value; if (!kho || !maVt) return;
+  TKV.ma_vt = maVt; TKV.kho = kho;
+  var k = kho + '|' + maVt, cu = TKV.cache[k];
+  document.getElementById('moTheKho').classList.add('hien');
+  if (cu && !taiLai) { veTheKho(cu); return; }
+  var r0 = tonRows.filter(function (r) { return r.ma_vt === maVt; })[0];
+  document.getElementById('tkvTieuDe').textContent = r0 ? r0.ten_vt : maVt;
+  document.getElementById('tkvMa').textContent = maVt + (r0 && r0.don_vi ? ' · ' + r0.don_vi : '');
+  document.getElementById('tkvTong').innerHTML = ''; document.getElementById('tkvLuc').textContent = 'Đang đọc chứng từ đã duyệt…';
+  document.getElementById('tkvDs').innerHTML = '';
+  api('theKho', { ma_kho: kho, ma_vt: maVt }, 90).then(function (kq) {
+    TKV.cache[k] = kq;
+    if (TKV.ma_vt === maVt && TKV.kho === kho) veTheKho(kq);
+  }).catch(function (e) { document.getElementById('tkvLuc').textContent = '⚠ ' + e.message; });
+}
+function veTheKho(kq) {
+  var dv = kq.don_vi || '';
+  document.getElementById('tkvTieuDe').textContent = kq.ten_vt;
+  document.getElementById('tkvMa').textContent = kq.ma_vt + (dv ? ' · ' + dv : '') + (kq.quy_cach ? ' · ' + kq.quy_cach : '');
+  document.getElementById('tkvTong').innerHTML = '<div><small>Đầu kỳ' + (kq.ngay_chot ? ' ' + kq.ngay_chot : '') + '</small><b>' + soVn(kq.dau_ky) + '</b></div><div><small>Nhập (app)</small><b style="color:#1b7f3b">+' + soVn(kq.nhap) + '</b></div>' +
+    '<div><small>Xuất (app)</small><b style="color:#b3261e">−' + soVn(kq.xuat) + '</b></div><div><small>Tồn hiện tại</small><b style="color:var(--do)">' + soVn(kq.ton) + '</b></div>' + (kq.kiem_ke ? '<div><small>Kiểm kê</small><b>' + (kq.kiem_ke > 0 ? '+' : '') + soVn(kq.kiem_ke) + '</b></div>' : '');
+  document.getElementById('tkvLuc').textContent = kq.so_dong + ' dòng phiếu đã duyệt · tính lúc ' + kq.luc + (kq.tu_cache ? ' (bản nhớ)' : '') + (kq.nhap_truoc_dau_ky ? ' · nhập lũy kế trước đầu kỳ ' + soVn(kq.nhap_truoc_dau_ky) : '');
+  var ds = kq.dong.slice().reverse();                   // mới nhất trên cùng
+  var html = ds.map(function (d) {
+    var dau = d.loai === 'XUAT' ? '−' : '+', nhan = d.loai === 'NHAP' ? (d.loai_gd === 'NHAN_THUE' ? 'NHẬN THUÊ' : 'NHẬP') : d.loai === 'XUAT' ? (d.loai_gd === 'TRA_THUE' ? 'TRẢ THUÊ' : 'XUẤT') : 'KIỂM KÊ';
+    var mo = d.loai === 'KIEM_KE' ? '' : ' onclick="moAnhPhieu(\'' + (d.loai === 'NHAP' ? 'PN' : 'PX') + '\',\'' + esc(d.so) + '\')"';
+    var nd = '<span class="p"' + mo + '>' + esc(d.so) + '</span> · ' + nhan + (d.so_ncc ? ' · số NCC ' + esc(d.so_ncc) : '') +
+      (d.ben ? '<br>' + esc(d.ben) : '') + (d.ma_viec ? '<br><span class="nho-mo">' + esc(d.ma_viec) + (d.phan_khu ? ' · ' + esc(d.phan_khu) : '') + '</span>' : '') +
+      (d.nguoi ? '<br><span class="nho-mo">' + (d.loai === 'XUAT' ? 'Người nhận: ' : d.loai === 'NHAP' ? 'Người giao: ' : '') + esc(d.nguoi) + '</span>' : '') +
+      (d.ghi_chu ? '<br><span class="nho-mo">' + esc(d.ghi_chu) + '</span>' : '');
+    return '<div class="tkv ' + d.loai + '"><div class="ng">' + (d.ngay_chu || '?') + (d.luc && String(d.luc).slice(0, 10) !== d.ngay_chu ? '<br><span class="nho-mo">lập ' + esc(String(d.luc).slice(0, 10)) + '</span>' : '') + '</div><div class="nd">' + nd + '</div>' +
+      '<div class="sl"><b>' + dau + soVn(Math.abs(d.sl)) + '</b><small>tồn sau ' + soVn(d.ton_sau) + '</small></div></div>';
+  }).join('');
+  html += '<div class="tkv DAU_KY"><div class="ng">' + (kq.ngay_chot || '') + '</div><div class="nd">Tồn đầu kỳ' + (kq.co_dau_ky ? ' (sheet TON_KHO)' : ' — chưa khai báo') + '</div><div class="sl"><b>' + soVn(kq.dau_ky) + '</b><small>' + esc(dv) + '</small></div></div>';
+  if (!kq.dong.length) html = '<div class="nho-mo" style="padding:8px 6px">Chưa có phiếu nhập / xuất nào đã duyệt cho vật tư này ở kho đang chọn.</div>' + html;
+  document.getElementById('tkvDs').innerHTML = html;
 }
 
 /* ================= v1.16: tài khoản ================= */
@@ -2095,6 +2154,11 @@ function taiAnhPhieu(loai, so) {
     ANH_DANG_TAI[so] = false;
     var el = document.getElementById('ctAnhCho'); if (el) el.textContent = '⚠ ' + e.message;
   });
+}
+function moAnhPhieu(loai, so) {                            // v1.18: xem ảnh phiếu từ thẻ kho (tải nếu chưa có)
+  if (ANH_CACHE[so]) { xemAnhTo(so); return; }
+  tai(true, 'Đang tải ảnh phiếu…');
+  api('anhPhieu', { loai: loai, so: so }, 60).then(function (kq) { tai(false); ANH_CACHE[so] = 'data:' + (kq.mime || 'image/jpeg') + ';base64,' + kq.base64; xemAnhTo(so); }).catch(function (e) { tai(false); bao('Không tải được ảnh phiếu: ' + e.message); });
 }
 function xemAnhTo(so) { var im = document.getElementById('anhTo'); im.src = ANH_CACHE[so] || ''; im.classList.remove('to'); document.getElementById('moAnh').classList.add('hien'); }
 /* sửa 1 dòng / thêm dòng */
