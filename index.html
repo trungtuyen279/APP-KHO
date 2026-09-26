@@ -1,6 +1,20 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.18.0 (GitHub Pages) · 23/09/2026 · đi cùng Code v0.21.0 + OCR v1.9.1
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.20.0 (GitHub Pages) · 26/09/2026 · đi cùng Code v0.22.0 + Quy v1.0.0 + OCR v1.9.1
+  v1.20.0 (anh gửi ảnh app báo cáo 26/09 tối — "giao diện kho như app báo cáo, nút có icon dễ nhìn; hàng trên là nút quỹ, hàng dưới là nút kho"):
+     (1) HÀNG NÚT QUỸ dưới dải tên màn (như hàng Tin tức · Tổng quan · … của app báo cáo): ô vuông bo góc nền hồng, icon nét đỏ, nhãn dưới —
+         Tồn quỹ (kèm số tồn) · Thu · Chi · Chuyển · Sổ quỹ · Duyệt (số phiếu chờ, chỉ CHT/ADMIN). CHỈ hiện cho tài khoản có quyền quỹ
+         (khoiTao.quy.duoc), có ở mọi màn trừ đăng nhập. Bỏ nút 💵 Quỹ vàng trên thanh đỏ (1.19). Màn Quỹ bỏ 3 nút trùng.
+     (2) THANH NÚT KHO dưới đáy: icon nét (SVG) thay emoji — Tổng quan · Chụp phiếu · Xuất kho · Tồn kho · Duyệt · Tài khoản; nút đang chọn đỏ.
+     (3) Hàng thống kê Tổng quan (Đề nghị VT · Hàng thuê · Chi phí thuê · Vật liệu chính) dùng icon nét cùng bộ.
+     (4) Dải đỏ dưới tiêu đề hiện TÊN MÀN đang mở (TỔNG QUAN, XUẤT KHO, QUỸ CÔNG TRƯỜNG…) như "TRANG CHỦ" của app báo cáo.
+  v1.19.0 (anh yêu cầu 26/09): QUỸ CÔNG TRƯỜNG (GĐ1) — nút 💵 Quỹ trên THANH ĐẦU (cạnh Thoát), CHỈ hiện cho tài khoản máy chủ cho
+     phép (khoiTao.quy.duoc: ADMIN mọi công trình · CHT / KE_TOAN_DA đúng công trình ở cột ma_da). Màn Quỹ: thanh TỒN QUỸ thường trực
+     (tổng · theo người giữ quỹ · thu/chi kỳ · chờ duyệt → tồn dự kiến · số cảnh báo · âm quỹ đỏ · nguồn chưa có số dư đầu kỳ);
+     3 nút ＋ Thu / － Chi / ⇄ Chuyển quỹ (form: ngày, số tiền tự chấm nghìn, khoản mục bắt buộc chọn, người nhận gõ tìm/tạo mới,
+     CK → ngân hàng, TK, số tham chiếu chống trùng; ảnh chứng từ nén ≤1600 px); khối Chờ duyệt (CHT/ADMIN duyệt / trả lại có lý do);
+     Sổ quỹ lọc kỳ · nguồn · Thu/Chi/Chuyển/Chờ/Bị trả/Cảnh báo/Đã hủy + tìm, tổng thu/chi đã duyệt; chạm dòng → chi tiết + Sửa/Hủy
+     theo quyền (máy chủ quyết). Dữ liệu quỹ chỉ giữ trong bộ nhớ khi app mở, không lưu xuống máy; TK nhận chỉ hiện 4 số cuối.
   v1.18.0 (anh yêu cầu 23/09): màn Tồn kho — CHẠM 1 VẬT TƯ → thẻ kho cuộn từ dưới lên (hành động theKho): tồn đầu kỳ + ngày chốt,
      từng dòng nhập / xuất / kiểm kê đã duyệt (mới nhất trên cùng: ngày, số phiếu, NCC / tổ đội, đầu việc, người nhận, ± số lượng,
      tồn sau), tổng nhập / xuất / tồn; nhớ theo kho + mã trong phiên, nút ↻ tải lại; chạm số phiếu → xem ảnh phiếu (như màn duyệt).
@@ -227,6 +241,49 @@
   #htBang td.so{text-align:right;white-space:nowrap}
   .pct-thanh{display:block;height:5px;border-radius:3px;background:#E67E22;margin-top:3px;overflow:hidden}
   .pct-thanh i{display:block;height:100%;background:#0B4F9C}
+  /* v1.20: hàng nút quỹ (trên) + thanh nút kho (dưới) kiểu app báo cáo — icon nét SVG */
+  .hang-quy{display:none;background:#fff;border-bottom:1px solid var(--vien);padding:9px 2px 7px;gap:2px}
+  .hang-quy.hien{display:flex}
+  .hq-nut{flex:1;min-width:0;background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:4px;padding:0;font-family:inherit;color:#1c2430;position:relative;cursor:pointer}
+  .hq-nut .o{width:46px;height:46px;border-radius:13px;background:#FDECEC;display:flex;align-items:center;justify-content:center}
+  .hq-nut svg{width:25px;height:25px;stroke:var(--xanh);fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  .hq-nut b{font-size:12.5px;font-weight:600;white-space:nowrap;line-height:1.1}
+  .hq-nut small{font-size:11px;color:var(--xanh);font-weight:700;line-height:1;white-space:nowrap;min-height:11px}
+  .hq-nut:active .o,.hq-nut.chon .o{background:#F9CFCF}
+  .hq-nut .dem{position:absolute;top:-5px;left:50%;margin-left:12px;background:var(--do);color:#fff;border-radius:10px;padding:0 6px;font-size:11.5px;font-weight:700;line-height:18px;display:none}
+  .tab button svg{display:block;width:24px;height:24px;margin:0 auto 3px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .tab button{color:#444;font-weight:600;white-space:nowrap;font-size:11.5px;overflow:hidden;text-overflow:ellipsis}
+  .tq-nut .ic svg{width:24px;height:24px;stroke:var(--xanh);fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;display:block;margin:0 auto}
+  /* v1.19: QUỸ CÔNG TRƯỜNG */
+  .top .phai{display:flex;align-items:center;gap:6px}
+  .qt{background:#fff;border:1.5px solid var(--xanh);border-radius:12px;padding:10px 12px;margin-bottom:10px}
+  .qt.am{background:#ffebee;border-color:var(--do)}
+  .qt-dau{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:12.5px;color:#555;font-weight:700;letter-spacing:.2px}
+  .qt-dau button{border:1px solid var(--vien);background:#fff;border-radius:6px;padding:3px 9px;font-size:13px}
+  .qt-so{font-size:26px;font-weight:800;color:var(--xanh);margin:2px 0 0;white-space:nowrap}
+  .qt.am .qt-so{color:var(--do)}
+  .qt-nho{font-size:12.5px;color:#444;margin-top:3px}
+  .qt-nguon{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:6px}
+  .qt-nguon span{background:#f4f6f9;border-radius:12px;padding:2px 9px;font-size:12.5px;white-space:nowrap}
+  .qt-nguon span.am{background:#ffcdd2;color:#b71c1c;font-weight:700}
+  .qt-dong{font-size:12.5px;margin-top:4px}
+  .qt-dong.cb{color:#b45309;font-weight:700;cursor:pointer} .qt-dong.vang{color:#8a5a00}
+  .qr{display:flex;gap:8px;padding:9px 4px;border-bottom:1px solid var(--vien);cursor:pointer;align-items:flex-start}
+  .qr:active{background:#fff5f5}
+  .qr .t{flex:1;min-width:0;font-size:13.5px;line-height:1.35} .qr .t small{color:#666;font-size:12px}
+  .qr .t .nd{display:block;color:#333;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .qr .tien{flex:none;text-align:right;font-weight:800;font-size:14.5px;white-space:nowrap}
+  .qr.THU .tien{color:var(--ok)} .qr.CHI .tien{color:var(--do)} .qr.CHUYEN_NOI_BO .tien{color:#0B4F9C}
+  .qr.HUY{opacity:.5} .qr.HUY .tien{text-decoration:line-through}
+  .tem.q-CHO_DUYET{background:#B36B00}.tem.q-DA_DUYET{background:var(--ok)}.tem.q-TU_CHOI{background:var(--do)}.tem.q-HUY{background:#888}
+  .qcb{display:inline-block;background:#fff3e0;color:#8a4b00;border:1px solid #ffcc80;border-radius:8px;padding:0 6px;font-size:11px;margin:2px 3px 0 0}
+  .qcb.do{background:#ffebee;color:#b71c1c;border-color:#ef9a9a}
+  .quy-tong{display:flex;gap:6px;text-align:center;margin-top:8px}
+  .quy-tong div{flex:1;background:#f6f7f9;border-radius:8px;padding:6px 3px} .quy-tong small{display:block;font-size:11px;color:#666} .quy-tong b{font-size:13.5px}
+  .quy-loc{display:flex;gap:6px} .quy-loc select,.quy-loc input{margin:2px 0 6px}
+  .qct td{padding:5px 4px;border-bottom:1px solid #eee;font-size:13.5px;vertical-align:top} .qct td:first-child{color:#666;width:36%}
+  .qf-2{display:flex;gap:8px} .qf-2>div{flex:1;min-width:0}
+  .chk{display:flex;align-items:center;gap:8px;margin:0 0 10px;font-size:14px;color:#333} .chk input{width:auto;margin:0}
   /* v1.8: hàng nút thống kê + chi phí thuê */
   .tq-hang{display:flex;gap:6px;margin:0 0 10px}
   .tq-nut{flex:1;min-width:0;background:#fff;border:1.5px solid var(--vien);border-radius:10px;padding:8px 4px 7px;text-align:center;font-family:inherit;color:#1c2430;position:relative}
@@ -293,8 +350,17 @@
 <div class="tai" id="tai">⏳ Đang xử lý…<div class="nho-mo" id="taiChu"></div></div>
 <div class="nhac" id="nhac"></div>
 
-<div class="top"><div class="trai"><img src="icons/logo.png" alt=""><div><h1 id="tieuDe">Kho công trường</h1><small id="topUser"></small></div></div><button id="btnThoat" onclick="dangXuat()" style="display:none">Thoát</button></div>
+<div class="top"><div class="trai"><img src="icons/logo.png" alt=""><div><h1 id="tieuDe">Kho công trường</h1><small id="topUser"></small></div></div><div class="phai"><button id="btnThoat" onclick="dangXuat()" style="display:none">Thoát</button></div></div>
 <div class="secbar" id="secbar">KHO CÔNG TRƯỜNG — LICOGI13FC</div>
+<!-- v1.20: HÀNG NÚT QUỸ — chỉ ADMIN / CHT / KE_TOAN_DA (máy chủ quyết qua khoiTao.quy) -->
+<div class="hang-quy" id="hangQuy">
+  <button class="hq-nut" id="hqTon" onclick="moQuyMuc('TON')"><span class="o"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg></span><b>Tồn quỹ</b><small id="hqTonChu"></small><span class="dem" id="hqTonDem"></span></button>
+  <button class="hq-nut" id="hqThu" onclick="moQuyMuc('THU')"><span class="o"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg></span><b>Thu</b><small id="hqThuChu"></small><span class="dem" id="hqThuDem"></span></button>
+  <button class="hq-nut" id="hqChi" onclick="moQuyMuc('CHI')"><span class="o"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg></span><b>Chi</b><small id="hqChiChu"></small><span class="dem" id="hqChiDem"></span></button>
+  <button class="hq-nut" id="hqChuyen" onclick="moQuyMuc('CHUYEN_NOI_BO')"><span class="o"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></svg></span><b>Chuyển</b><small id="hqChuyenChu"></small><span class="dem" id="hqChuyenDem"></span></button>
+  <button class="hq-nut" id="hqSo" onclick="moQuyMuc('SO')"><span class="o"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span><b>Sổ quỹ</b><small id="hqSoChu"></small><span class="dem" id="hqSoDem"></span></button>
+  <button class="hq-nut" id="hqDuyet" onclick="moQuyMuc('DUYET')"><span class="o"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></span><b>Duyệt</b><small id="hqDuyetChu"></small><span class="dem" id="hqDuyetDem"></span></button>
+</div>
 <div class="offline" id="offline">⚠ Không có mạng — chỉ xem được dữ liệu đã tải, chưa gửi được phiếu</div>
 
 <!-- ======================= ĐĂNG NHẬP ======================= -->
@@ -320,10 +386,10 @@
   </div>
   <!-- 2. Hàng nút thống kê (v1.8): Đề nghị mở màn riêng; Hàng thuê / Chi phí thuê đổi khối bên dưới -->
   <div class="tq-hang">
-    <button class="tq-nut" id="tqNutDN" onclick="moDeNghi()"><span class="ic">📋</span><b>Đề nghị VT</b><small id="tqDnChu">Đang tải…</small><span class="dem" id="tqDnDem" style="display:none"></span></button>
-    <button class="tq-nut chon" id="tqNutHT" onclick="chonKhoiTq('HT')"><span class="ic">🔄</span><b>Hàng thuê</b><small id="tqHtChu">Đang tải…</small></button>
-    <button class="tq-nut" id="tqNutCP" onclick="chonKhoiTq('CP')"><span class="ic">💰</span><b>Chi phí thuê</b><small id="tqCpChu">Đang tải…</small><span class="dem" id="tqCpDem" style="display:none"></span></button>
-    <button class="tq-nut" id="tqNutVL" style="display:none" onclick="chonKhoiTq('VL')"><span class="ic">📦</span><b>Vật liệu chính</b><small id="tqVlChu">Đang tải…</small><span class="dem" id="tqVlDem" style="display:none"></span></button>
+    <button class="tq-nut" id="tqNutDN" onclick="moDeNghi()"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg></span><b>Đề nghị VT</b><small id="tqDnChu">Đang tải…</small><span class="dem" id="tqDnDem" style="display:none"></span></button>
+    <button class="tq-nut chon" id="tqNutHT" onclick="chonKhoiTq('HT')"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></span><b>Hàng thuê</b><small id="tqHtChu">Đang tải…</small></button>
+    <button class="tq-nut" id="tqNutCP" onclick="chonKhoiTq('CP')"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg></span><b>Chi phí thuê</b><small id="tqCpChu">Đang tải…</small><span class="dem" id="tqCpDem" style="display:none"></span></button>
+    <button class="tq-nut" id="tqNutVL" style="display:none" onclick="chonKhoiTq('VL')"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg></span><b>Vật liệu chính</b><small id="tqVlChu">Đang tải…</small><span class="dem" id="tqVlDem" style="display:none"></span></button>
   </div>
   <!-- 3c. Vật liệu chính — % đã nhập so với khối lượng giao khoán (v1.12, chỉ ADMIN) -->
   <div class="the" id="tqKhoiVatLieu" style="display:none">
@@ -650,14 +716,72 @@
   <div class="nho-mo" style="text-align:center;margin-top:8px">App Kho công trường LICOGI13FC · <a href="huong-dan-cai-dat.html">Hướng dẫn cài app</a></div>
 </div>
 
+<!-- ======================= QUỸ CÔNG TRƯỜNG (v1.19 — chỉ ADMIN / CHT / KE_TOAN_DA đúng công trình) ======================= -->
+<div class="man" id="manQuy">
+  <div class="the" id="quyChonDa" style="display:none;padding:8px 12px">
+    <label>Công trình</label><select id="quyDuAn" onchange="doiDuAnQuy(this.value)"></select>
+  </div>
+  <div class="qt" id="quyTon"><div class="qt-dau"><span>TỒN QUỸ</span></div><div class="qt-so">…</div><div class="qt-nho">Đang tải…</div></div>
+  <div class="the" id="quyChoKhoi" style="display:none;scroll-margin-top:60px">
+    <h3 style="font-size:14px;margin:0 0 4px">⏳ Chờ duyệt <span id="quyChoSo"></span></h3>
+    <div id="quyChoDs"></div>
+  </div>
+  <div class="the">
+    <h3 id="quySoTieuDe" style="font-size:14px;margin:0 0 8px;scroll-margin-top:60px">📒 Sổ quỹ</h3>
+    <div class="quy-loc"><select id="quyKy" onchange="doiKyQuy(this.value)"></select><select id="quyNguonLoc" onchange="veSoQuy()"></select></div>
+    <div class="chips" id="quyLoc"></div>
+    <input id="quyTim" placeholder="Tìm người nhận, nội dung, số tham chiếu, mã phiếu…" oninput="veSoQuy()" style="margin-top:0">
+    <div id="quySoDs"></div>
+    <div class="quy-tong" id="quySoTong"></div>
+  </div>
+  <div class="nho-mo" style="text-align:center;margin:4px 0 10px">Sắp có: 📷 đọc ảnh biên lai CK · 💳 tạm ứng / hoàn ứng · 📊 báo cáo tháng. Mọi thao tác ghi nhật ký theo tài khoản.</div>
+</div>
+
+<!-- Form thu / chi / chuyển quỹ -->
+<div class="mo" id="moQuyForm"><div>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3 id="qfTieuDe" style="margin:0"></h3><button class="nut phu nho" style="margin:0;flex:none" onclick="dong('moQuyForm')">✕</button></div>
+  <div class="nho-mo" id="qfPhu" style="margin:2px 0 8px"></div>
+  <div class="qf-2"><div><label>Ngày giờ giao dịch</label><input id="qfNgay" type="datetime-local"></div>
+    <div><label>Số tiền (đ)</label><input id="qfTien" inputmode="numeric" autocomplete="off" oninput="qfDinhDangTien(this)" placeholder="0"></div></div>
+  <div class="nho-mo" id="qfTienChu" style="margin:-8px 0 8px;text-align:right"></div>
+  <div id="qfKmO"><label>Khoản mục</label><select id="qfKm" onchange="qfDoiKm()"></select></div>
+  <div id="qfTenO"><label id="qfTenNhan">Người nhận</label><input id="qfTen" list="qfDtDs" autocomplete="off" placeholder="Gõ tên — chọn trong danh sách nếu có"><datalist id="qfDtDs"></datalist></div>
+  <label>Nội dung</label><textarea id="qfNd" rows="2" placeholder="VD: Tạm ứng lương công nhân tổ anh Thi tuần 39"></textarea>
+  <div class="qf-2"><div><label>Hình thức</label><select id="qfHt" onchange="qfDoiHt()"><option value="CK">Chuyển khoản</option><option value="TIEN_MAT">Tiền mặt</option></select></div>
+    <div><label id="qfNguonNhan">Nguồn quỹ (người chi)</label><select id="qfNguon"></select></div></div>
+  <div id="qfDenO"><label>Chuyển đến (người giữ quỹ nhận)</label><select id="qfDen"></select></div>
+  <div id="qfCkO">
+    <div class="qf-2"><div><label>Ngân hàng nhận</label><input id="qfNh" placeholder="VD: BIDV"></div><div><label>Số TK nhận</label><input id="qfTk" inputmode="numeric" autocomplete="off"></div></div>
+    <label>Số tham chiếu (trên biên lai — chống ghi trùng)</label><input id="qfRef" autocomplete="off">
+  </div>
+  <label>Số phiếu thu / chi giấy (nếu có)</label><input id="qfSoPhieu">
+  <label class="chk"><input type="checkbox" id="qfCt"> Đã có chứng từ gốc (phiếu ký / hóa đơn)</label>
+  <label>Ảnh chứng từ / biên lai</label>
+  <input type="file" accept="image/*" id="qfAnh" onchange="qfChonAnh(event)" style="padding:7px">
+  <div id="qfAnhXem" class="nho-mo" style="margin:-6px 0 8px"></div>
+  <label>Ghi chú</label><input id="qfGhiChu">
+  <div id="qfLyDoO"><label>Lý do sửa (bắt buộc với phiếu đã duyệt)</label><input id="qfLyDo"></div>
+  <div id="qfLoi" class="canh-bao" style="display:none"></div>
+  <button class="nut ok" id="qfNutGui" onclick="qfGui()">📨 Gửi duyệt</button>
+  <button class="nut phu" onclick="dong('moQuyForm')">Đóng</button>
+</div></div>
+
+<!-- Chi tiết 1 giao dịch quỹ -->
+<div class="mo" id="moQuyCt"><div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><h3 id="qcTieuDe" style="margin:0"></h3><button class="nut phu nho" style="margin:0;flex:none" onclick="dong('moQuyCt')">✕</button></div>
+  <div id="qcNoiDung"></div>
+  <div id="qcNut" style="margin-top:8px"></div>
+  <button class="nut phu" onclick="dong('moQuyCt')">Đóng</button>
+</div></div>
+
 <!-- Thanh tab -->
 <div class="tab" id="thanhTab" style="display:none">
-  <button id="tabTongQuan" onclick="moTab('TongQuan')"><span>🏗️</span>Tổng quan</button>
-  <button id="tabChup" onclick="moTab('Chup')"><span>📷</span>Chụp phiếu<i class="bao" id="tabChupBao"></i></button>
-  <button id="tabXuat" onclick="moTab('Xuat')"><span>🧾</span>Xuất kho</button>
-  <button id="tabTon" onclick="moTab('Ton')"><span>📊</span>Tồn kho</button>
-  <button id="tabDuyet" onclick="moTab('Duyet')" style="display:none"><span>✅</span>Duyệt</button>
-  <button id="tabTaiKhoan" onclick="moTab('TaiKhoan')"><span>👤</span>Tài khoản</button>
+  <button id="tabTongQuan" onclick="moTab('TongQuan')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Tổng quan</button>
+  <button id="tabChup" onclick="moTab('Chup')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Chụp phiếu<i class="bao" id="tabChupBao"></i></button>
+  <button id="tabXuat" onclick="moTab('Xuat')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>Xuất kho</button>
+  <button id="tabTon" onclick="moTab('Ton')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>Tồn kho</button>
+  <button id="tabDuyet" onclick="moTab('Duyet')" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg>Duyệt</button>
+  <button id="tabTaiKhoan" onclick="moTab('TaiKhoan')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Tài khoản</button>
 </div>
 
 <script>
@@ -678,7 +802,7 @@ var CHUA_CO_API = !CONFIG.API_URL || CONFIG.API_URL.indexOf('DAN_URL') === 0;
    Apps Script quá tải / lỗi tạm thời → trước đây app báo "Máy chủ trả về dữ liệu không hợp lệ". Nay: thử lại tối đa 3 lần
    (chờ 1,5 s → 3 s → 6 s), báo tiến trình trên hộp "Đang xử lý". Hành động GHI gửi kèm yc_id (mã duy nhất mỗi lần bấm):
    máy chủ v0.17.2 nhớ kết quả theo yc_id nên thử lại không tạo phiếu trùng / duyệt 2 lần. */
-var API_GHI = { ocrPhieu: 1, ocrNopAnh: 1, ocrHangDoiCapNhat: 1, taoMaTam: 1, guiPhieuOcr: 1, xuatTay: 1, chuyenXeLuu: 1, deNghiLuu: 1, deNghiBuoc: 1, deNghiAnh: 1, duyet: 1, suaPhieu: 1, daKiemMau: 1, vatLieuTay: 1 };
+var API_GHI = { ocrPhieu: 1, ocrNopAnh: 1, ocrHangDoiCapNhat: 1, taoMaTam: 1, guiPhieuOcr: 1, xuatTay: 1, chuyenXeLuu: 1, deNghiLuu: 1, deNghiBuoc: 1, deNghiAnh: 1, duyet: 1, suaPhieu: 1, daKiemMau: 1, vatLieuTay: 1, quyLuu: 1, quyDuyet: 1, quyHuy: 1 };
 var API_THU_LAI = 3, API_CHO_MS = [1500, 3000, 6000];
 function apiMaYc() { return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10) + '-' + Math.random().toString(36).slice(2, 6); }
 function apiChu(msg) {                                     // ghi tiến trình thử lại lên hộp Đang xử lý (nếu đang hiện), không mở hộp mới
@@ -769,7 +893,7 @@ function tai(b, chu) {                                   // v1.2: hiện số gi
 }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 function moTab(t) {
-  ['TongQuan', 'DeNghi', 'LapDeNghi', 'Chup', 'Xuat', 'Ton', 'Duyet', 'Login', 'KiemTra', 'TaiKhoan'].forEach(function (x) {
+  ['TongQuan', 'DeNghi', 'LapDeNghi', 'Chup', 'Xuat', 'Ton', 'Duyet', 'Login', 'KiemTra', 'TaiKhoan', 'Quy'].forEach(function (x) {   // v1.19: + Quy
     var m = document.getElementById('man' + x); if (m) m.classList.remove('hien');
     var b = document.getElementById('tab' + x); if (b) b.classList.remove('chon');
   });
@@ -781,6 +905,11 @@ function moTab(t) {
   if (t === 'DeNghi') taiDeNghi(false);
   if (t === 'Chup') taiHangDoi(true);                                                              // v1.16: hàng đợi OCR nền
   if (t === 'TaiKhoan') veTaiKhoan();                                                              // v1.16
+  var TEN_MAN = { TongQuan: 'TỔNG QUAN', DeNghi: 'ĐỀ NGHỊ VẬT TƯ', LapDeNghi: 'LẬP ĐỀ NGHỊ VẬT TƯ', Chup: 'CHỤP PHIẾU', Xuat: 'XUẤT KHO', Ton: 'TỒN KHO', Duyet: 'DUYỆT PHIẾU KHO', KiemTra: 'KIỂM TRA PHIẾU', TaiKhoan: 'TÀI KHOẢN', Quy: 'QUỸ CÔNG TRƯỜNG', Login: 'KHO CÔNG TRƯỜNG — LICOGI13FC' };
+  document.getElementById('secbar').textContent = TEN_MAN[t] || 'KHO CÔNG TRƯỜNG — LICOGI13FC';   // v1.20: tên màn như app báo cáo
+  document.getElementById('hqTon').classList.toggle('chon', t === 'Quy');
+  if (typeof capNhatNutQuy === 'function' && DL) capNhatNutQuy();
+  if (t === 'Quy') taiQuy(false);
 }
 function dong(id) { document.getElementById(id).classList.remove('hien'); }
 function bao(msg) { alert(msg); }
@@ -794,6 +923,8 @@ function nhac(msg, giay) {                                  // v1.16.1: dòng nh
 function hienLogin(loi) {
   document.getElementById('thanhTab').style.display = 'none';
   document.getElementById('btnThoat').style.display = 'none';
+  document.getElementById('hangQuy').classList.remove('hien');                                   // v1.20
+  if (typeof QUY !== 'undefined') { QUY.dm = {}; QUY.dl = {}; QUY.ma_da = ''; QUY.ky = ''; QUY.loc = 'TAT_CA'; }   // v1.19: đổi tài khoản không giữ dữ liệu quỹ cũ
   document.getElementById('topUser').textContent = ''; document.getElementById('tieuDe').textContent = 'Kho công trường';
   var el = document.getElementById('lgLoi'); el.style.display = loi ? 'block' : 'none'; el.textContent = loi || '';
   moTab('Login');
@@ -862,6 +993,9 @@ function batDau(kq) {
     document.getElementById('tqNutVL').style.display = laAdmin() ? '' : 'none';   // v1.12: bảng vật liệu chính chỉ ADMIN thấy
     document.getElementById('thanhTab').style.display = 'flex';
     document.getElementById('btnThoat').style.display = '';
+    capNhatNutQuy();                                                                                // v1.19: nút Quỹ theo quyền máy chủ
+    if (coQuy() && !QUY.dl[QUY.ma_da]) setTimeout(function () { try { taiQuy(true); } catch (e) { } }, 2500);   // v1.20: số tồn / chờ duyệt trên hàng nút
+    if (!coQuy() && document.getElementById('manQuy').classList.contains('hien')) moTab('TongQuan');
     var manHienTai = document.querySelector('.man.hien');
     if (!manHienTai || manHienTai.id === 'manLogin') moTab('TongQuan');   // v1.4: mở app vào Tổng quan; đang ở tab khác (tải ngầm) thì giữ nguyên
     hdBatDauTheoDoi();                                                     // v1.16: hỏi hàng đợi OCR mỗi 30 s
@@ -2239,6 +2373,264 @@ function daKiemMau(loai, so) {
   api('daKiemMau', { loai: loai, so: so, thiet_bi: THIET_BI }).then(function (kq) {
     dong('moPhieu'); taiChoDuyet();
   }).catch(function (e) { bao(e.message); });
+}
+/* ================= v1.19: QUỸ CÔNG TRƯỜNG =================
+   Nút 💵 Quỹ trên thanh đầu — chỉ hiện khi máy chủ (khoiTao.quy.duoc) cho phép: ADMIN / CHT / KE_TOAN_DA đúng công trình.
+   Máy chủ (Quy.gs) kiểm quyền lại ở mọi hành động. Dữ liệu quỹ CHỈ giữ trong bộ nhớ khi app mở (không lưu xuống máy). */
+var QUY = { ma_da: '', dm: {}, dl: {}, ky: '', loc: 'TAT_CA', form: null, anh: null, dangTai: false };
+var QUY_CB = { 'C4-GAN': ['Nghi trùng: cùng người, cùng số tiền trong vài ngày', 0], 'C1-ANH': ['Chi chuyển khoản chưa có ảnh biên lai', 0],
+  'C1-LON': ['Khoản lớn chưa có chứng từ gốc', 1], 'C7-TM': ['Tiền mặt vượt ngưỡng — đề nghị KTT xác nhận', 0], 'C9-CHUNG': ['Nội dung chung chung — ghi rõ hơn', 0],
+  'QUY-AM': ['Nguồn quỹ âm sau khi duyệt — kiểm tra chứng từ thiếu / ghi sai nguồn', 1] };
+var QUY_TT = { CHO_DUYET: 'Chờ duyệt', DA_DUYET: 'Đã duyệt', TU_CHOI: 'Bị trả lại', HUY: 'Đã hủy' };
+var QUY_LOAI = { THU: 'Phiếu thu', CHI: 'Phiếu chi', CHUYEN_NOI_BO: 'Chuyển quỹ nội bộ' };
+function coQuy() { return !!(DL && DL.quy && DL.quy.duoc && (DL.quy.du_an || []).length); }
+function tienDu(x) { x = Math.round(Number(x) || 0); return (x < 0 ? '−' : '') + Math.abs(x).toLocaleString('vi-VN') + ' đ'; }
+function quyTenDa(m) { var d = ((DL && DL.du_an) || []).filter(function (x) { return x.ma_da === m; })[0]; return d ? (d.ten_da || m) : m; }
+function capNhatNutQuy() {
+  var b = document.getElementById('hangQuy'); if (!b) return;
+  var dangLogin = document.getElementById('manLogin').classList.contains('hien');
+  b.classList.toggle('hien', coQuy() && !dangLogin);
+  document.getElementById('hqDuyet').style.display = coQuy() && DL.quy.duyet ? '' : 'none';
+  if (!coQuy()) { QUY.dm = {}; QUY.dl = {}; QUY.ma_da = ''; return; }
+  var ds = DL.quy.du_an, sel = document.getElementById('quyDuAn');
+  sel.innerHTML = ds.map(function (m) { return '<option value="' + esc(m) + '">' + esc(quyTenDa(m)) + '</option>'; }).join('');
+  document.getElementById('quyChonDa').style.display = ds.length > 1 ? '' : 'none';
+  if (ds.indexOf(QUY.ma_da) < 0) { var tq = document.getElementById('tqDuAn').value; QUY.ma_da = ds.indexOf(tq) >= 0 ? tq : ds[0]; }
+  sel.value = QUY.ma_da;
+}
+function moQuy() { if (!coQuy()) return; moTab('Quy'); }
+/* v1.20: hàng nút quỹ — TON: màn Quỹ · THU/CHI/CHUYEN_NOI_BO: mở form (chờ tải danh mục nếu chưa có) · SO / DUYET: cuộn tới khối */
+function moQuyMuc(m) {
+  if (!coQuy()) return;
+  if (!document.getElementById('manQuy').classList.contains('hien')) moTab('Quy');
+  var lan = 0;
+  (function cho() {
+    var dm = QUY.dm[QUY.ma_da];
+    if (!dm) { if (++lan > 60) return; return setTimeout(cho, 250); }
+    if (m === 'THU' || m === 'CHI' || m === 'CHUYEN_NOI_BO') return moQuyForm(m);
+    if (m === 'SO') { QUY.loc = 'TAT_CA'; veSoQuy(); document.getElementById('quySoTieuDe').scrollIntoView({ behavior: 'smooth' }); }
+    if (m === 'DUYET') { var k = document.getElementById('quyChoKhoi'); if (k.style.display === 'none') { QUY.loc = 'CHO'; veSoQuy(); document.getElementById('quySoTieuDe').scrollIntoView({ behavior: 'smooth' }); nhac('Không có phiếu quỹ chờ duyệt'); } else k.scrollIntoView({ behavior: 'smooth' }); }
+    if (m === 'TON') window.scrollTo({ top: 0, behavior: 'smooth' });
+  })();
+}
+function veHangQuy() {                                       // số trên hàng nút: tồn quỹ + phiếu chờ duyệt
+  var dl = QUY.dl[QUY.ma_da]; if (!dl) return;
+  document.getElementById('hqTonChu').textContent = tienVn(dl.ton.tong);
+  var n = (dl.cho_duyet || []).length, d = document.getElementById('hqDuyetDem');
+  d.textContent = n; d.style.display = n ? 'block' : 'none';
+}
+function doiDuAnQuy(m) { QUY.ma_da = m; QUY.ky = ''; QUY.loc = 'TAT_CA'; veQuy(); taiQuy(false); }
+function doiKyQuy(k) { QUY.ky = k; taiQuy(true); }
+function taiQuy(ngam) {
+  if (!coQuy() || !QUY.ma_da) return;
+  var m = QUY.ma_da, coDm = !!QUY.dm[m];
+  if (QUY.dl[m]) veQuy(); else if (!ngam) document.getElementById('quyTon').querySelector('.qt-nho').textContent = 'Đang tải…';
+  if (QUY.dangTai) return; QUY.dangTai = true;
+  api(coDm ? 'quyDuLieu' : 'quyKhoiTao', { ma_da: m, ky: QUY.ky }, 60).then(function (kq) {
+    QUY.dangTai = false;
+    if (!coDm) QUY.dm[m] = { khoan_muc: kq.khoan_muc || [], nguon: kq.nguon || [], doi_tuong: kq.doi_tuong || [], quyen: kq.quyen || {} };
+    QUY.dl[m] = kq; if (!QUY.ky) QUY.ky = kq.ky;
+    if (m === QUY.ma_da) veQuy();
+  }).catch(function (e) {
+    QUY.dangTai = false;
+    if (/QUY_KHONG_QUYEN/.test(e.message)) { DL.quy = { duoc: false }; capNhatNutQuy(); moTab('TongQuan'); }
+    bao(e.message.replace(/^QUY_KHONG_QUYEN:\s*/, ''));
+  });
+}
+function veQuy() {
+  var m = QUY.ma_da, dl = QUY.dl[m], dm = QUY.dm[m];
+  if (!dl || !dm) return;
+  veHangQuy();                                                // v1.20
+  var t = dl.ton, el = document.getElementById('quyTon'); el.classList.toggle('am', !!t.am);
+  var h = '<div class="qt-dau"><span>TỒN QUỸ ' + esc(quyTenDa(m)).toUpperCase() + ' <small style="font-weight:400">(đến ' + esc(t.luc || dl.luc || '') + ')</small></span><button onclick="taiQuy(true)">↻</button></div>';
+  h += '<div class="qt-so">' + tienDu(t.tong) + '</div>';
+  h += '<div class="qt-nho">Kỳ ' + esc(t.ky) + ': Thu <b style="color:var(--ok)">+' + tienVn(t.thu_ky) + '</b> · Chi <b style="color:var(--do)">−' + tienVn(t.chi_ky) + '</b> (đã duyệt, không tính chuyển nội bộ)</div>';
+  h += '<div class="qt-nguon">' + (t.theo_nguon || []).map(function (n) { return '<span class="' + (n.am ? 'am' : '') + '">' + esc(n.ten) + ' ' + tienDu(n.ton) + '</span>'; }).join('') + '</div>';
+  if (t.cho_duyet && t.cho_duyet.so) h += '<div class="qt-dong">⏳ Chờ duyệt: <b>' + t.cho_duyet.so + ' phiếu</b>' + (t.cho_duyet.tien_chi ? ' · chi ' + tienDu(t.cho_duyet.tien_chi) : '') + (t.cho_duyet.tien_thu ? ' · thu ' + tienDu(t.cho_duyet.tien_thu) : '') + ' → tồn dự kiến <b>' + tienDu(t.du_kien) + '</b></div>';
+  h += '<div class="qt-dong" style="color:#777">💳 Tạm ứng chưa hoàn: chưa bật (giai đoạn 3)</div>';
+  if (t.so_canh_bao) h += '<div class="qt-dong cb" onclick="QUY.loc=\'CB\';QUY.ky=\'TAT_CA\';taiQuy(true)">⚠ ' + t.so_canh_bao + ' phiếu có cảnh báo (nhấn để xem)</div>';
+  if (t.am) h += '<div class="qt-dong" style="color:var(--do);font-weight:700">🔴 Âm quỹ — kiểm tra chứng từ thiếu hoặc ghi sai nguồn</div>';
+  if ((t.thieu_dau_ky || []).length) h += '<div class="qt-dong vang">Chưa có số dư đầu kỳ: ' + esc(t.thieu_dau_ky.join(', ')) + ' — tồn đang tính từ 0 (nạp sau biên bản kiểm quỹ)</div>';
+  if (!(t.theo_nguon || []).length) h += '<div class="qt-dong vang">Công trình chưa khai người giữ quỹ (sheet QUY_NGUON) — chưa lập phiếu được. Báo GĐDA.</div>';
+  el.innerHTML = h;
+  // chờ duyệt (CHT / ADMIN)
+  var cho = dl.cho_duyet || [], khoi = document.getElementById('quyChoKhoi');
+  khoi.style.display = dm.quyen.duyet && cho.length ? '' : 'none';
+  document.getElementById('quyChoSo').textContent = cho.length ? '(' + cho.length + ')' : '';
+  document.getElementById('quyChoDs').innerHTML = cho.map(function (r) {
+    return quyDongHtml(r) + '<div style="display:flex;gap:6px;margin:-2px 0 8px"><button class="nut ok nho" style="flex:1;margin:0" onclick="quyDuyet(\'' + esc(r.gd_id) + '\',true)">✔ Duyệt</button><button class="nut do nho" style="flex:1;margin:0" onclick="quyDuyet(\'' + esc(r.gd_id) + '\',false)">✕ Trả lại</button></div>';
+  }).join('');
+  // bộ lọc sổ quỹ
+  var kySel = document.getElementById('quyKy'), kyDs = (dl.ky_ds || []).slice();
+  kySel.innerHTML = kyDs.map(function (k) { return '<option value="' + k + '">Kỳ ' + k + '</option>'; }).join('') + '<option value="TAT_CA">Tất cả kỳ</option>';
+  kySel.value = QUY.ky || dl.ky;
+  var ng = document.getElementById('quyNguonLoc'), ngCu = ng.value;
+  ng.innerHTML = '<option value="">Mọi nguồn</option>' + (t.theo_nguon || []).map(function (n) { return '<option value="' + esc(n.ma) + '">' + esc(n.ten) + '</option>'; }).join('');
+  ng.value = ngCu;
+  veSoQuy();
+}
+function quyLocDong(r, loc) {
+  if (loc === 'THU' || loc === 'CHI' || loc === 'CHUYEN_NOI_BO') return r.loai === loc && r.trang_thai !== 'HUY';
+  if (loc === 'CHO') return r.trang_thai === 'CHO_DUYET';
+  if (loc === 'TRA') return r.trang_thai === 'TU_CHOI';
+  if (loc === 'CB') return !!r.canh_bao && r.trang_thai !== 'HUY';
+  if (loc === 'HUY') return r.trang_thai === 'HUY';
+  return r.trang_thai !== 'HUY';
+}
+function veSoQuy() {
+  var dl = QUY.dl[QUY.ma_da]; if (!dl) return;
+  var rows = dl.rows || [], ng = document.getElementById('quyNguonLoc').value, tim = khongDau(document.getElementById('quyTim').value);
+  var locs = [['TAT_CA', 'Tất cả'], ['THU', 'Thu'], ['CHI', 'Chi'], ['CHUYEN_NOI_BO', 'Chuyển'], ['CHO', 'Chờ duyệt'], ['TRA', 'Bị trả'], ['CB', '⚠ Cảnh báo'], ['HUY', 'Đã hủy']];
+  document.getElementById('quyLoc').innerHTML = locs.map(function (l) { var n = rows.filter(function (r) { return quyLocDong(r, l[0]); }).length; return '<button class="' + (QUY.loc === l[0] ? 'chon' : '') + '" onclick="QUY.loc=\'' + l[0] + '\';veSoQuy()">' + l[1] + ' ' + n + '</button>'; }).join('');
+  var ds = rows.filter(function (r) {
+    if (!quyLocDong(r, QUY.loc)) return false;
+    if (ng && r.nguon_quy !== ng && r.nguon_den !== ng) return false;
+    if (tim && khongDau([r.ten, r.noi_dung, r.so_tham_chieu, r.gd_id, r.ten_km, r.so_phieu].join(' ')).indexOf(tim) < 0) return false;
+    return true;
+  });
+  document.getElementById('quySoDs').innerHTML = ds.length ? ds.map(quyDongHtml).join('') : '<div class="nho-mo" style="padding:10px 0">Không có giao dịch' + (QUY.loc !== 'TAT_CA' || tim || ng ? ' theo bộ lọc' : ' trong kỳ') + '.</div>';
+  var thu = 0, chi = 0, dd = ds.filter(function (r) { return r.trang_thai === 'DA_DUYET'; });
+  dd.forEach(function (r) {
+    if (r.loai === 'THU') thu += r.so_tien; else if (r.loai === 'CHI') chi += r.so_tien;
+    else if (ng) { if (r.nguon_den === ng) thu += r.so_tien; if (r.nguon_quy === ng) chi += r.so_tien; }
+  });
+  document.getElementById('quySoTong').innerHTML = '<div><small>Thu (đã duyệt)</small><b style="color:var(--ok)">' + tienVn(thu) + '</b></div><div><small>Chi (đã duyệt)</small><b style="color:var(--do)">' + tienVn(chi) + '</b></div><div><small>Chênh lệch</small><b>' + tienVn(thu - chi) + '</b></div><div><small>Số dòng</small><b>' + ds.length + '</b></div>';
+}
+function khongDau(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase().trim(); }
+function quyTenNguon(ma) { var n = ((QUY.dm[QUY.ma_da] || {}).nguon || []).filter(function (x) { return x.ma === ma; })[0]; return n ? n.ten : ma; }
+function quyCbHtml(s) { return String(s || '').split(',').filter(String).map(function (c) { var d = QUY_CB[c] || [c, 0]; return '<span class="qcb' + (d[1] ? ' do' : '') + '" title="' + esc(d[0]) + '">' + esc(c) + '</span>'; }).join(''); }
+function quyDongHtml(r) {
+  var dau = r.loai === 'THU' ? '+' : (r.loai === 'CHI' ? '−' : '⇄ ');
+  var nguon = r.loai === 'CHUYEN_NOI_BO' ? quyTenNguon(r.nguon_quy) + ' → ' + quyTenNguon(r.nguon_den) : quyTenNguon(r.nguon_quy);
+  return '<div class="qr ' + r.loai + ' ' + r.trang_thai + '" onclick="moQuyCt(\'' + esc(r.gd_id) + '\')"><div class="t"><b>' + esc(r.ten_km) + '</b> · ' + esc(r.ten) +
+    '<br><small>' + esc(r.ngay) + ' · ' + esc(nguon) + ' · ' + (r.hinh_thuc === 'CK' ? 'CK' : 'TM') + (r.anh_ct ? ' · 📎' : '') + '</small><span class="nd">' + esc(r.noi_dung) + '</span>' + quyCbHtml(r.canh_bao) +
+    '</div><div class="tien">' + dau + dongVn(r.so_tien) + '<br><span class="tem q-' + r.trang_thai + '">' + (QUY_TT[r.trang_thai] || r.trang_thai) + '</span></div></div>';
+}
+function quyTimDong(id) {
+  var dl = QUY.dl[QUY.ma_da] || {}; return (dl.rows || []).concat(dl.cho_duyet || []).filter(function (x) { return x.gd_id === id; })[0];
+}
+function moQuyCt(id) {
+  var r = quyTimDong(id); if (!r) return;
+  document.getElementById('qcTieuDe').textContent = (QUY_LOAI[r.loai] || r.loai) + ' · ' + tienDu(r.so_tien);
+  var dongs = [['Mã phiếu', r.gd_id], ['Trạng thái', (QUY_TT[r.trang_thai] || r.trang_thai) + (r.ly_do ? ' — ' + r.ly_do : '')], ['Ngày giao dịch', r.ngay + ' (kỳ ' + r.ky + ')'], ['Khoản mục', r.ma_km + ' — ' + r.ten_km],
+    [r.loai === 'THU' ? 'Người nộp' : 'Người nhận', r.ten + (r.doi_tuong_id ? ' (' + r.doi_tuong_id + ')' : '')], ['Nội dung', r.noi_dung],
+    ['Hình thức', r.hinh_thuc === 'CK' ? 'Chuyển khoản' : 'Tiền mặt'], ['Nguồn quỹ', r.loai === 'CHUYEN_NOI_BO' ? quyTenNguon(r.nguon_quy) + ' → ' + quyTenNguon(r.nguon_den) : quyTenNguon(r.nguon_quy)]];
+  if (r.hinh_thuc === 'CK') dongs.push(['Ngân hàng / TK nhận', [r.ngan_hang_nhan, r.tk4].filter(String).join(' · ') || '—'], ['Số tham chiếu', r.so_tham_chieu || '—']);
+  dongs.push(['Số phiếu giấy', r.so_phieu || '—'], ['Chứng từ gốc', r.co_chung_tu ? 'Đã có' : 'Chưa'], ['Người lập', r.nguoi_nhap + ' · ' + r.tg_nhap]);
+  if (r.nguoi_duyet) dongs.push(['Người duyệt', r.nguoi_duyet + ' · ' + r.tg_duyet]);
+  if (r.ghi_chu) dongs.push(['Ghi chú', r.ghi_chu]);
+  var h = '<table class="qct" style="width:100%;border-collapse:collapse">' + dongs.map(function (d) { return '<tr><td>' + esc(d[0]) + '</td><td>' + esc(d[1]) + '</td></tr>'; }).join('') + '</table>';
+  if (r.canh_bao) h += '<div class="canh-bao">' + r.canh_bao.split(',').filter(String).map(function (c) { return '<b>' + esc(c) + '</b>: ' + esc((QUY_CB[c] || [c])[0]); }).join('<br>') + '<br><small>App không kết luận sai phạm — chỉ đánh dấu cần giải trình.</small></div>';
+  h += r.anh_ct ? '<a class="nut phu" style="text-align:center;text-decoration:none" href="' + esc(r.anh_ct) + '" target="_blank" rel="noopener">🖼 Mở ảnh chứng từ (Drive)</a>' : '<div class="nho-mo" style="margin-top:6px">Chưa có ảnh chứng từ.</div>';
+  document.getElementById('qcNoiDung').innerHTML = h;
+  var n = '';
+  if (r.duyet) n += '<button class="nut ok" onclick="quyDuyet(\'' + esc(r.gd_id) + '\',true)">✔ Duyệt</button><button class="nut do" onclick="quyDuyet(\'' + esc(r.gd_id) + '\',false)">✕ Trả lại kế toán</button>';
+  if (r.sua) n += '<button class="nut phu" onclick="dong(\'moQuyCt\');moQuyForm(\'' + r.loai + '\',\'' + esc(r.gd_id) + '\')">✎ Sửa' + (r.trang_thai === 'TU_CHOI' ? ' và gửi lại' : (r.trang_thai === 'DA_DUYET' ? ' (phiếu đã duyệt — ghi lý do)' : '')) + '</button>';
+  if (r.huy) n += '<button class="nut phu" style="color:var(--do);border-color:var(--do)" onclick="quyHuy(\'' + esc(r.gd_id) + '\')">🗑 Hủy phiếu</button>';
+  document.getElementById('qcNut').innerHTML = n;
+  document.getElementById('moQuyCt').classList.add('hien');
+}
+function qfNgayInput(vn) {                                   // 'dd/MM/yyyy HH:mm' → 'yyyy-MM-ddTHH:mm'; trống → bây giờ
+  var m = String(vn || '').match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})/);
+  if (m) return m[3] + '-' + m[2] + '-' + m[1] + 'T' + m[4] + ':' + m[5];
+  var d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16);
+}
+function moQuyForm(loai, gdId) {
+  var dm = QUY.dm[QUY.ma_da]; if (!dm) return bao('Đang tải dữ liệu quỹ, thử lại sau vài giây');
+  if (!dm.nguon.length) return bao('Công trình chưa khai người giữ quỹ (sheet QUY_NGUON). Báo GĐDA / quản trị khai trước.');
+  var r = gdId ? quyTimDong(gdId) : null;
+  QUY.form = { loai: loai, gd_id: gdId || '', cu: r }; QUY.anh = null;
+  document.getElementById('qfTieuDe').textContent = (r ? 'Sửa ' : '') + (QUY_LOAI[loai] || loai) + ' — ' + quyTenDa(QUY.ma_da);
+  document.getElementById('qfPhu').textContent = r ? r.gd_id + ' · ' + (QUY_TT[r.trang_thai] || r.trang_thai) : 'Gửi xong phiếu ở trạng thái Chờ duyệt — CHT / GĐDA duyệt mới tính vào tồn quỹ.';
+  var loaiKm = loai === 'CHUYEN_NOI_BO' ? 'NOI_BO' : loai;
+  document.getElementById('qfKm').innerHTML = '<option value="">— chọn khoản mục —</option>' + dm.khoan_muc.filter(function (k) { return k.loai === loaiKm; }).map(function (k) { return '<option value="' + esc(k.ma) + '">' + esc(k.ma + ' — ' + k.ten) + (k.dong_bc ? ' [' + esc(k.dong_bc) + ']' : '') + '</option>'; }).join('');
+  document.getElementById('qfKmO').style.display = loai === 'CHUYEN_NOI_BO' ? 'none' : '';
+  document.getElementById('qfTenO').style.display = loai === 'CHUYEN_NOI_BO' ? 'none' : '';
+  document.getElementById('qfDenO').style.display = loai === 'CHUYEN_NOI_BO' ? '' : 'none';
+  document.getElementById('qfTenNhan').textContent = loai === 'THU' ? 'Người / đơn vị nộp tiền' : 'Người nhận tiền';
+  document.getElementById('qfNguonNhan').textContent = loai === 'THU' ? 'Nguồn quỹ (người nhận tiền)' : (loai === 'CHI' ? 'Nguồn quỹ (người chi)' : 'Chuyển từ');
+  document.getElementById('qfDtDs').innerHTML = dm.doi_tuong.map(function (x) { return '<option value="' + esc(x.ten) + '">' + esc([x.loai, x.tk4].filter(String).join(' · ')) + '</option>'; }).join('');
+  var optN = dm.nguon.map(function (n) { return '<option value="' + esc(n.ma) + '">' + esc(n.ten) + '</option>'; }).join('');
+  document.getElementById('qfNguon').innerHTML = '<option value="">— chọn —</option>' + optN; document.getElementById('qfDen').innerHTML = '<option value="">— chọn —</option>' + optN;
+  var cuaToi = dm.nguon.filter(function (n) { return n.cua_toi; })[0];
+  var g = function (id, v) { document.getElementById(id).value = v == null ? '' : v; };
+  g('qfNgay', qfNgayInput(r && r.ngay)); g('qfTien', r ? dongVn(r.so_tien) : ''); g('qfKm', r ? r.ma_km : ''); g('qfTen', r ? r.ten : ''); g('qfNd', r ? r.noi_dung : '');
+  g('qfHt', r ? r.hinh_thuc : (loai === 'CHUYEN_NOI_BO' ? 'TIEN_MAT' : 'CK')); g('qfNguon', r ? r.nguon_quy : (cuaToi ? cuaToi.ma : '')); g('qfDen', r ? r.nguon_den : '');
+  g('qfNh', r ? r.ngan_hang_nhan : ''); g('qfTk', ''); g('qfRef', r ? r.so_tham_chieu : ''); g('qfSoPhieu', r ? r.so_phieu : ''); g('qfGhiChu', r ? r.ghi_chu : ''); g('qfLyDo', '');
+  document.getElementById('qfTk').placeholder = r && r.tk4 ? 'Để trống = giữ ' + r.tk4 : '';
+  document.getElementById('qfCt').checked = !!(r && r.co_chung_tu);
+  document.getElementById('qfAnh').value = '';
+  document.getElementById('qfAnhXem').textContent = r && r.anh_ct ? 'Đã có ảnh — chọn ảnh mới để thay.' : '';
+  document.getElementById('qfLyDoO').style.display = r && r.trang_thai === 'DA_DUYET' ? '' : 'none';
+  document.getElementById('qfNutGui').textContent = r && r.trang_thai === 'DA_DUYET' ? '💾 Lưu sửa (ghi nhật ký)' : '📨 Gửi duyệt';
+  document.getElementById('qfLoi').style.display = 'none';
+  qfDinhDangTien(document.getElementById('qfTien')); qfDoiHt();
+  document.getElementById('moQuyForm').classList.add('hien');
+}
+function qfDoiHt() { document.getElementById('qfCkO').style.display = document.getElementById('qfHt').value === 'CK' && QUY.form && QUY.form.loai !== 'CHUYEN_NOI_BO' ? '' : 'none'; }
+function qfDoiKm() { }
+function qfDinhDangTien(el) {
+  var so = String(el.value || '').replace(/[^\d]/g, '').replace(/^0+(?=\d)/, '');
+  el.value = so ? Number(so).toLocaleString('vi-VN') : '';
+  document.getElementById('qfTienChu').textContent = so ? '= ' + tienVn(Number(so)) : '';
+}
+function qfChonAnh(ev) {
+  var f = ev.target.files && ev.target.files[0]; if (!f) { QUY.anh = null; return; }
+  document.getElementById('qfAnhXem').textContent = 'Đang nén ảnh…';
+  nenAnhFile(f, function (dataUrl) {
+    if (!dataUrl) { QUY.anh = null; document.getElementById('qfAnhXem').textContent = 'Ảnh hỏng, chọn ảnh khác.'; return; }
+    QUY.anh = dataUrl.split(',')[1];
+    document.getElementById('qfAnhXem').innerHTML = '<img src="' + dataUrl + '" style="max-width:100%;max-height:160px;border-radius:6px;margin-top:4px">';
+  });
+}
+function qfGui() {
+  var F = QUY.form, dm = QUY.dm[QUY.ma_da]; if (!F || !dm) return;
+  var v = function (id) { return document.getElementById(id).value.trim(); };
+  var loi = [], ten = v('qfTen'), tien = Number(v('qfTien').replace(/[^\d]/g, '')) || 0, ht = v('qfHt');
+  if (!v('qfNgay')) loi.push('ngày giờ');
+  if (!(tien > 0)) loi.push('số tiền');
+  if (F.loai !== 'CHUYEN_NOI_BO' && !v('qfKm')) loi.push('khoản mục');
+  if (F.loai !== 'CHUYEN_NOI_BO' && !ten) loi.push(F.loai === 'THU' ? 'người nộp' : 'người nhận');
+  if (!v('qfNd')) loi.push('nội dung');
+  if (!v('qfNguon')) loi.push('nguồn quỹ');
+  if (F.loai === 'CHUYEN_NOI_BO' && !v('qfDen')) loi.push('nguồn nhận');
+  if (v('qfKm') === 'K' && v('qfNd').length < 15) loi.push('nội dung "Chi khác" ≥ 15 ký tự');
+  if (F.cu && F.cu.trang_thai === 'DA_DUYET' && !v('qfLyDo')) loi.push('lý do sửa');
+  var el = document.getElementById('qfLoi');
+  if (loi.length) { el.style.display = 'block'; el.textContent = 'Còn thiếu: ' + loi.join(', '); return; }
+  var dt = dm.doi_tuong.filter(function (x) { return x.ten === ten; })[0];
+  var goiDi = { ma_da: QUY.ma_da, gd_id: F.gd_id, loai: F.loai, ngay_gd: v('qfNgay'), so_tien: tien, ma_km: v('qfKm'), ten_nguoi_nhan: ten, doi_tuong_id: dt ? dt.id : '',
+    noi_dung: v('qfNd'), hinh_thuc: ht, nguon_quy: v('qfNguon'), nguon_den: v('qfDen'), ngan_hang_nhan: v('qfNh'), tk_nhan: v('qfTk'), so_tham_chieu: v('qfRef'),
+    so_phieu: v('qfSoPhieu'), co_chung_tu: document.getElementById('qfCt').checked, ghi_chu: v('qfGhiChu'), ly_do: v('qfLyDo'), thiet_bi: THIET_BI };
+  if (QUY.anh) { goiDi.anh_base64 = QUY.anh; goiDi.anh_mime = 'image/jpeg'; }
+  if (F.loai === 'CHI' && ht === 'CK' && !QUY.anh && !(F.cu && F.cu.anh_ct) && !confirm('Chi chuyển khoản chưa có ảnh biên lai — phiếu sẽ bị gắn cảnh báo C1-ANH. Vẫn gửi?')) return;
+  tai(true, 'Đang gửi phiếu quỹ…');
+  api('quyLuu', goiDi, 90).then(function (kq) {
+    tai(false); dong('moQuyForm');
+    if (kq.doi_tuong_moi && ten && !dt) dm.doi_tuong.push({ id: '', ten: ten, loai: '', tk4: '' });
+    var cb = (kq.canh_bao || []).filter(String);
+    nhac('Đã ' + (F.gd_id ? 'lưu ' : 'gửi ') + kq.gd_id + (cb.length ? ' · cảnh báo: ' + cb.join(', ') : ''), cb.length ? 7 : 4);
+    if (kq.ton && QUY.dl[QUY.ma_da]) QUY.dl[QUY.ma_da].ton = kq.ton;
+    taiQuy(true);
+  }).catch(function (e) { tai(false); el.style.display = 'block'; el.textContent = e.message; });
+}
+function quyDuyet(id, dongY) {
+  var r = quyTimDong(id), lyDo = '';
+  if (dongY) { if (!confirm('Duyệt ' + id + ' — ' + (r ? tienDu(r.so_tien) + ' · ' + r.ten : '') + '?')) return; }
+  else { lyDo = prompt('Lý do trả lại (kế toán sẽ thấy để sửa):', ''); if (lyDo === null) return; if (!lyDo.trim()) return bao('Phải ghi lý do trả lại'); }
+  tai(true, dongY ? 'Đang duyệt…' : 'Đang trả lại…');
+  api('quyDuyet', { ma_da: QUY.ma_da, gd_id: id, dong_y: dongY, ly_do: lyDo, thiet_bi: THIET_BI }, 60).then(function (kq) {
+    tai(false); dong('moQuyCt');
+    if (kq.am && kq.am.length) bao('Đã duyệt. ⚠ Nguồn quỹ đang ÂM: ' + kq.am.join(', ') + '\nKiểm tra chứng từ thiếu hoặc ghi sai nguồn.');
+    else nhac(dongY ? 'Đã duyệt ' + id : 'Đã trả lại ' + id);
+    taiQuy(true);
+  }).catch(function (e) { tai(false); bao(e.message); });
+}
+function quyHuy(id) {
+  var lyDo = prompt('Lý do hủy phiếu ' + id + ':', ''); if (lyDo === null) return; if (!lyDo.trim()) return bao('Phải ghi lý do hủy');
+  tai(true, 'Đang hủy…');
+  api('quyHuy', { ma_da: QUY.ma_da, gd_id: id, ly_do: lyDo, thiet_bi: THIET_BI }, 60).then(function () { tai(false); dong('moQuyCt'); nhac('Đã hủy ' + id); taiQuy(true); })
+    .catch(function (e) { tai(false); bao(e.message); });
 }
 </script>
 </body>
