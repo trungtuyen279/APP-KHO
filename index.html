@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.21.0 (GitHub Pages) · 27/09/2026 · đi cùng Code v0.23.0 + Quy v1.1.0 + OCR v1.9.2
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.22.0 (GitHub Pages) · 27/09/2026 · đi cùng Code v0.24.0 + Quy v1.2.0 + OCR v1.9.2
+  v1.22.0 — GĐ3 TẠM ỨNG / HOÀN ỨNG / CẤN TRỪ (anh chốt 27/09): thanh tồn quỹ hiện "Tạm ứng chưa hoàn: tổ đội … · gián tiếp …" (chạm → khối Tạm ứng);
+     khối "💳 Tạm ứng chưa hoàn" (lọc Còn nợ / Tổ đội / Gián tiếp / Quá hạn / Đã hết nợ) → chạm 1 người / tổ: lịch sử đầu kỳ · ứng · hoàn · cấn trừ,
+     nút Hoàn ứng (phiếu Thu THU_HOANUNG) · Thanh toán khối lượng + cấn trừ (tổ đội) · Cấn trừ không qua quỹ; nút "Cấn trừ theo bảng lương tháng"
+     (khối gián tiếp — nhập số trừ từng người theo bảng chuyển khoản lương công ty). Form Chi TD: ô "Cấn trừ tạm ứng kỳ này" (phiếu ghi SỐ THỰC
+     CHUYỂN). Form báo tổ / người đang còn nợ ứng, người nhận không phải tổ trưởng. Sổ quỹ thêm lọc "Cấn trừ" (không qua quỹ, không tính tồn).
   v1.21.0 (anh yêu cầu 26/09 tối, gửi 4 biên lai BIDV/MB): nút Thu / Chi → hộp chọn 📷 Chụp biên lai · 🖼 Chọn nhiều ảnh (≤ 10) · ✍️ Nhập tay.
      Ảnh gửi NỀN như phiếu kho (không hộp chờ): nén ≤1600 px → quyOcrNop từng ảnh; màn Quỹ có khối "🧾 Biên lai AI đọc" (ĐANG GỬI → CHỜ AI →
      ĐANG ĐỌC → ĐÃ ĐỌC / TRÙNG / LỖI) tự hỏi máy chủ 20 s/lần khi còn ảnh chưa đọc; số đỏ trên ô Thu / Chi = biên lai đã đọc chờ kiểm tra;
@@ -290,6 +295,15 @@
   .tem.q-CHO_DUYET{background:#B36B00}.tem.q-DA_DUYET{background:var(--ok)}.tem.q-TU_CHOI{background:var(--do)}.tem.q-HUY{background:#888}
   .qcb{display:inline-block;background:#fff3e0;color:#8a4b00;border:1px solid #ffcc80;border-radius:8px;padding:0 6px;font-size:11px;margin:2px 3px 0 0}
   .qcb.do{background:#ffebee;color:#b71c1c;border-color:#ef9a9a}
+  .qr.CAN_TRU .tien{color:#6a1b9a} .qt-dong.tu{cursor:pointer}
+  .tu-r{display:flex;gap:8px;padding:9px 4px;border-bottom:1px solid var(--vien);cursor:pointer;align-items:flex-start}
+  .tu-r .t{flex:1;min-width:0;font-size:13.5px;line-height:1.35} .tu-r .t small{color:#666;font-size:12px;display:block}
+  .tu-r .tien{flex:none;text-align:right;font-weight:800;font-size:14.5px;white-space:nowrap;color:#6a1b9a} .tu-r.het{opacity:.55} .tu-r.het .tien{color:#555}
+  .tu-qh{display:inline-block;background:var(--do);color:#fff;border-radius:6px;font-size:10.5px;font-weight:700;padding:0 5px;margin-left:4px}
+  .tu-o{background:#f3e5f5;border:1px solid #ce93d8;border-radius:8px;padding:8px 10px;margin:0 0 10px;font-size:12.5px}
+  .tu-o label{margin-top:6px} .tu-o .do{color:var(--do);font-weight:700}
+  .ctl-r{display:flex;gap:8px;align-items:center;border-bottom:1px solid var(--vien);padding:6px 0;font-size:13px} .ctl-r .t{flex:1;min-width:0}
+  .ctl-r input{width:120px;flex:none;margin:0;text-align:right}
   .quy-tong{display:flex;gap:6px;text-align:center;margin-top:8px}
   .quy-tong div{flex:1;background:#f6f7f9;border-radius:8px;padding:6px 3px} .quy-tong small{display:block;font-size:11px;color:#666} .quy-tong b{font-size:13.5px}
   .quy-loc{display:flex;gap:6px} .quy-loc select,.quy-loc input{margin:2px 0 6px}
@@ -743,6 +757,13 @@
     <h3 style="font-size:14px;margin:0 0 4px">⏳ Chờ duyệt <span id="quyChoSo"></span></h3>
     <div id="quyChoDs"></div>
   </div>
+  <div class="the" id="quyTuKhoi" style="display:none;scroll-margin-top:60px">
+    <h3 style="font-size:14px;margin:0 0 4px">💳 Tạm ứng chưa hoàn <span id="quyTuSo"></span></h3>
+    <div class="chips" id="quyTuLoc"></div>
+    <div class="nho-mo" id="quyTuNho" style="margin-bottom:4px"></div>
+    <div id="quyTuDs"></div>
+    <button class="nut phu nho" onclick="moCanTruLuong()">📋 Cấn trừ theo bảng lương tháng (khối gián tiếp)</button>
+  </div>
   <div class="the">
     <h3 id="quySoTieuDe" style="font-size:14px;margin:0 0 8px;scroll-margin-top:60px">📒 Sổ quỹ</h3>
     <div class="quy-loc"><select id="quyKy" onchange="doiKyQuy(this.value)"></select><select id="quyNguonLoc" onchange="veSoQuy()"></select></div>
@@ -751,7 +772,7 @@
     <div id="quySoDs"></div>
     <div class="quy-tong" id="quySoTong"></div>
   </div>
-  <div class="nho-mo" style="text-align:center;margin:4px 0 10px">Sắp có: 📷 đọc ảnh biên lai CK · 💳 tạm ứng / hoàn ứng · 📊 báo cáo tháng. Mọi thao tác ghi nhật ký theo tài khoản.</div>
+  <div class="nho-mo" style="text-align:center;margin:4px 0 10px">Sắp có: 📊 báo cáo tháng. Mọi thao tác ghi nhật ký theo tài khoản.</div>
 </div>
 
 <!-- v1.21: Thu / Chi — lấy dữ liệu từ biên lai hay nhập tay -->
@@ -775,8 +796,11 @@
     <div><label>Số tiền (đ)</label><input id="qfTien" inputmode="numeric" autocomplete="off" oninput="qfDinhDangTien(this)" placeholder="0"></div></div>
   <div class="nho-mo" id="qfTienChu" style="margin:-8px 0 8px;text-align:right"></div>
   <div id="qfKmO"><label>Khoản mục</label><select id="qfKm" onchange="qfDoiKm()"></select></div>
-  <div id="qfToDoiO" style="display:none"><label>Tổ đội / thầu phụ (danh sách app báo cáo)</label><select id="qfToDoi"></select></div>
-  <div id="qfTenO"><label id="qfTenNhan">Người nhận</label><input id="qfTen" list="qfDtDs" autocomplete="off" placeholder="Gõ tên — chọn trong danh sách nếu có"><datalist id="qfDtDs"></datalist></div>
+  <div id="qfToDoiO" style="display:none"><label>Tổ đội / thầu phụ (danh sách app báo cáo)</label><select id="qfToDoi" onchange="qfDoiKm()"></select></div>
+  <div id="qfTenO"><label id="qfTenNhan">Người nhận</label><input id="qfTen" list="qfDtDs" autocomplete="off" placeholder="Gõ tên — chọn trong danh sách nếu có" oninput="qfTuCapNhat()"><datalist id="qfDtDs"></datalist></div>
+  <div id="qfTuO" class="tu-o" style="display:none"><div id="qfTuNho"></div>
+    <div id="qfCtO" style="display:none"><label>Cấn trừ tạm ứng kỳ này — mục K.4 trên bill (không đi qua quỹ)</label><input id="qfCanTru" inputmode="numeric" autocomplete="off" oninput="qfDinhDangCt(this)" placeholder="0">
+      <div class="nho-mo" id="qfCtChu"></div></div></div>
   <label>Nội dung</label><textarea id="qfNd" rows="2" placeholder="VD: Tạm ứng lương công nhân tổ anh Thi tuần 39"></textarea>
   <div class="qf-2"><div><label>Hình thức</label><select id="qfHt" onchange="qfDoiHt()"><option value="CK">Chuyển khoản</option><option value="TIEN_MAT">Tiền mặt</option></select></div>
     <div><label id="qfNguonNhan">Nguồn quỹ (người chi)</label><select id="qfNguon"></select></div></div>
@@ -795,6 +819,26 @@
   <div id="qfLoi" class="canh-bao" style="display:none"></div>
   <button class="nut ok" id="qfNutGui" onclick="qfGui()">📨 Gửi duyệt</button>
   <button class="nut phu" onclick="dong('moQuyForm')">Đóng</button>
+</div></div>
+
+<!-- v1.22: chi tiết tạm ứng 1 người / tổ -->
+<div class="mo" id="moQuyTu"><div>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3 id="qtuTieuDe" style="margin:0"></h3><button class="nut phu nho" style="margin:0;flex:none" onclick="dong('moQuyTu')">✕</button></div>
+  <div id="qtuNoiDung"></div>
+  <div id="qtuNut"></div>
+  <button class="nut phu" onclick="dong('moQuyTu')">Đóng</button>
+</div></div>
+<!-- v1.22: cấn trừ theo bảng lương tháng (khối gián tiếp) -->
+<div class="mo" id="moQuyCtl"><div>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3 style="margin:0">📋 Cấn trừ theo bảng lương</h3><button class="nut phu nho" style="margin:0;flex:none" onclick="dong('moQuyCtl')">✕</button></div>
+  <div class="nho-mo" style="margin:4px 0 6px">Nhập số tiền tạm ứng đã trừ vào lương từng người theo bảng chuyển khoản lương công ty (thực lĩnh = lương − tạm ứng − tiền ăn − bảo hiểm…). Không đi qua quỹ; CHT / GĐDA duyệt như phiếu quỹ.</div>
+  <div class="qf-2"><div><label>Bảng lương tháng</label><input id="ctlKy" type="month"></div><div><label>Ngày ghi</label><input id="ctlNgay" type="date"></div></div>
+  <button class="nut phu nho" onclick="ctlDienHet()">↧ Điền hết số còn nợ</button>
+  <div id="ctlDs"></div>
+  <div class="nho-mo" id="ctlTong" style="text-align:right;margin:6px 0"></div>
+  <div id="ctlLoi" class="canh-bao" style="display:none"></div>
+  <button class="nut ok" onclick="ctlGui()">📨 Gửi duyệt cấn trừ</button>
+  <button class="nut phu" onclick="dong('moQuyCtl')">Đóng</button>
 </div></div>
 
 <!-- Chi tiết 1 giao dịch quỹ -->
@@ -833,7 +877,7 @@ var CHUA_CO_API = !CONFIG.API_URL || CONFIG.API_URL.indexOf('DAN_URL') === 0;
    Apps Script quá tải / lỗi tạm thời → trước đây app báo "Máy chủ trả về dữ liệu không hợp lệ". Nay: thử lại tối đa 3 lần
    (chờ 1,5 s → 3 s → 6 s), báo tiến trình trên hộp "Đang xử lý". Hành động GHI gửi kèm yc_id (mã duy nhất mỗi lần bấm):
    máy chủ v0.17.2 nhớ kết quả theo yc_id nên thử lại không tạo phiếu trùng / duyệt 2 lần. */
-var API_GHI = { ocrPhieu: 1, ocrNopAnh: 1, ocrHangDoiCapNhat: 1, taoMaTam: 1, guiPhieuOcr: 1, xuatTay: 1, chuyenXeLuu: 1, deNghiLuu: 1, deNghiBuoc: 1, deNghiAnh: 1, duyet: 1, suaPhieu: 1, daKiemMau: 1, vatLieuTay: 1, quyLuu: 1, quyDuyet: 1, quyHuy: 1, quyOcrNop: 1, quyOcrCapNhat: 1 };
+var API_GHI = { ocrPhieu: 1, ocrNopAnh: 1, ocrHangDoiCapNhat: 1, taoMaTam: 1, guiPhieuOcr: 1, xuatTay: 1, chuyenXeLuu: 1, deNghiLuu: 1, deNghiBuoc: 1, deNghiAnh: 1, duyet: 1, suaPhieu: 1, daKiemMau: 1, vatLieuTay: 1, quyLuu: 1, quyDuyet: 1, quyHuy: 1, quyOcrNop: 1, quyOcrCapNhat: 1, quyCanTru: 1 };
 var API_THU_LAI = 3, API_CHO_MS = [1500, 3000, 6000];
 function apiMaYc() { return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10) + '-' + Math.random().toString(36).slice(2, 6); }
 function apiChu(msg) {                                     // ghi tiến trình thử lại lên hộp Đang xử lý (nếu đang hiện), không mở hộp mới
@@ -2412,9 +2456,11 @@ function daKiemMau(loai, so) {
 var QUY = { ma_da: '', dm: {}, dl: {}, ky: '', loc: 'TAT_CA', form: null, anh: null, dangTai: false };
 var QUY_CB = { 'C4-GAN': ['Nghi trùng: cùng người, cùng số tiền trong vài ngày', 0], 'C1-ANH': ['Chi chuyển khoản chưa có ảnh biên lai', 0],
   'C1-LON': ['Khoản lớn chưa có chứng từ gốc', 1], 'C7-TM': ['Tiền mặt vượt ngưỡng — đề nghị KTT xác nhận', 0], 'C9-CHUNG': ['Nội dung chung chung — ghi rõ hơn', 0],
-  'QUY-AM': ['Nguồn quỹ âm sau khi duyệt — kiểm tra chứng từ thiếu / ghi sai nguồn', 1] };
+  'QUY-AM': ['Nguồn quỹ âm sau khi duyệt — kiểm tra chứng từ thiếu / ghi sai nguồn', 1],
+  'C6-CONNO': ['Người / tổ này đang còn tạm ứng chưa hoàn', 0], 'C6-VUOT': ['Hoàn / cấn trừ nhiều hơn số còn nợ ứng — kiểm tra số đầu kỳ, phiếu cũ', 1],
+  'C6-TOTRUONG': ['Người nhận không phải tổ trưởng (người ký hợp đồng) — CHT xác nhận ủy quyền', 1] };
 var QUY_TT = { CHO_DUYET: 'Chờ duyệt', DA_DUYET: 'Đã duyệt', TU_CHOI: 'Bị trả lại', HUY: 'Đã hủy' };
-var QUY_LOAI = { THU: 'Phiếu thu', CHI: 'Phiếu chi', CHUYEN_NOI_BO: 'Chuyển quỹ nội bộ' };
+var QUY_LOAI = { THU: 'Phiếu thu', CHI: 'Phiếu chi', CHUYEN_NOI_BO: 'Chuyển quỹ nội bộ', CAN_TRU: 'Cấn trừ tạm ứng (không qua quỹ)' };
 function coQuy() { return !!(DL && DL.quy && DL.quy.duoc && (DL.quy.du_an || []).length); }
 function tienDu(x) { x = Math.round(Number(x) || 0); return (x < 0 ? '−' : '') + Math.abs(x).toLocaleString('vi-VN') + ' đ'; }
 function quyTenDa(m) { var d = ((DL && DL.du_an) || []).filter(function (x) { return x.ma_da === m; })[0]; return d ? (d.ten_da || m) : m; }
@@ -2481,7 +2527,10 @@ function veQuy() {
   h += '<div class="qt-nho">Kỳ ' + esc(t.ky) + ': Thu <b style="color:var(--ok)">+' + tienVn(t.thu_ky) + '</b> · Chi <b style="color:var(--do)">−' + tienVn(t.chi_ky) + '</b> (đã duyệt, không tính chuyển nội bộ)</div>';
   h += '<div class="qt-nguon">' + (t.theo_nguon || []).map(function (n) { return '<span class="' + (n.am ? 'am' : '') + '">' + esc(n.ten) + ' ' + tienDu(n.ton) + '</span>'; }).join('') + '</div>';
   if (t.cho_duyet && t.cho_duyet.so) h += '<div class="qt-dong">⏳ Chờ duyệt: <b>' + t.cho_duyet.so + ' phiếu</b>' + (t.cho_duyet.tien_chi ? ' · chi ' + tienDu(t.cho_duyet.tien_chi) : '') + (t.cho_duyet.tien_thu ? ' · thu ' + tienDu(t.cho_duyet.tien_thu) : '') + ' → tồn dự kiến <b>' + tienDu(t.du_kien) + '</b></div>';
-  h += '<div class="qt-dong" style="color:#777">💳 Tạm ứng chưa hoàn: chưa bật (giai đoạn 3)</div>';
+  var tu = t.tam_ung;                                          // v1.22: GĐ3 tạm ứng
+  if (tu && tu.tong > 0) h += '<div class="qt-dong tu" onclick="document.getElementById(\'quyTuKhoi\').scrollIntoView({behavior:\'smooth\'})">💳 Tạm ứng chưa hoàn: <b>' + tienDu(tu.tong) + '</b> (tổ đội ' + tienVn(tu.to_doi) + ' · gián tiếp ' + tienVn(tu.gian_tiep) + ') · ' + tu.so + ' người/tổ' + (tu.qua_han ? ' · <b style="color:var(--do)">⚠ ' + tu.qua_han + ' tổ quá hạn cấn trừ</b>' : '') + '</div>';
+  else if (tu) h += '<div class="qt-dong" style="color:#777">💳 Tạm ứng chưa hoàn: 0 đ</div>';
+  if (tu && !tu.co_dau_ky) h += '<div class="qt-dong vang">Chưa nạp số dư tạm ứng đầu kỳ (chốt 30/09) — số tạm ứng đang tính từ các phiếu ứng lập trên app</div>';
   if (t.so_canh_bao) h += '<div class="qt-dong cb" onclick="QUY.loc=\'CB\';QUY.ky=\'TAT_CA\';taiQuy(true)">⚠ ' + t.so_canh_bao + ' phiếu có cảnh báo (nhấn để xem)</div>';
   if (t.am) h += '<div class="qt-dong" style="color:var(--do);font-weight:700">🔴 Âm quỹ — kiểm tra chứng từ thiếu hoặc ghi sai nguồn</div>';
   if ((t.thieu_dau_ky || []).length) h += '<div class="qt-dong vang">Chưa có số dư đầu kỳ: ' + esc(t.thieu_dau_ky.join(', ')) + ' — tồn đang tính từ 0 (nạp sau biên bản kiểm quỹ)</div>';
@@ -2494,6 +2543,7 @@ function veQuy() {
   document.getElementById('quyChoDs').innerHTML = cho.map(function (r) {
     return quyDongHtml(r) + '<div style="display:flex;gap:6px;margin:-2px 0 8px"><button class="nut ok nho" style="flex:1;margin:0" onclick="quyDuyet(\'' + esc(r.gd_id) + '\',true)">✔ Duyệt</button><button class="nut do nho" style="flex:1;margin:0" onclick="quyDuyet(\'' + esc(r.gd_id) + '\',false)">✕ Trả lại</button></div>';
   }).join('');
+  veTamUng();                                                 // v1.22
   // bộ lọc sổ quỹ
   var kySel = document.getElementById('quyKy'), kyDs = (dl.ky_ds || []).slice();
   kySel.innerHTML = kyDs.map(function (k) { return '<option value="' + k + '">Kỳ ' + k + '</option>'; }).join('') + '<option value="TAT_CA">Tất cả kỳ</option>';
@@ -2504,7 +2554,7 @@ function veQuy() {
   veSoQuy();
 }
 function quyLocDong(r, loc) {
-  if (loc === 'THU' || loc === 'CHI' || loc === 'CHUYEN_NOI_BO') return r.loai === loc && r.trang_thai !== 'HUY';
+  if (loc === 'THU' || loc === 'CHI' || loc === 'CHUYEN_NOI_BO' || loc === 'CAN_TRU') return r.loai === loc && r.trang_thai !== 'HUY';
   if (loc === 'CHO') return r.trang_thai === 'CHO_DUYET';
   if (loc === 'TRA') return r.trang_thai === 'TU_CHOI';
   if (loc === 'CB') return !!r.canh_bao && r.trang_thai !== 'HUY';
@@ -2514,7 +2564,7 @@ function quyLocDong(r, loc) {
 function veSoQuy() {
   var dl = QUY.dl[QUY.ma_da]; if (!dl) return;
   var rows = dl.rows || [], ng = document.getElementById('quyNguonLoc').value, tim = khongDau(document.getElementById('quyTim').value);
-  var locs = [['TAT_CA', 'Tất cả'], ['THU', 'Thu'], ['CHI', 'Chi'], ['CHUYEN_NOI_BO', 'Chuyển'], ['CHO', 'Chờ duyệt'], ['TRA', 'Bị trả'], ['CB', '⚠ Cảnh báo'], ['HUY', 'Đã hủy']];
+  var locs = [['TAT_CA', 'Tất cả'], ['THU', 'Thu'], ['CHI', 'Chi'], ['CHUYEN_NOI_BO', 'Chuyển'], ['CAN_TRU', 'Cấn trừ'], ['CHO', 'Chờ duyệt'], ['TRA', 'Bị trả'], ['CB', '⚠ Cảnh báo'], ['HUY', 'Đã hủy']];
   document.getElementById('quyLoc').innerHTML = locs.map(function (l) { var n = rows.filter(function (r) { return quyLocDong(r, l[0]); }).length; return '<button class="' + (QUY.loc === l[0] ? 'chon' : '') + '" onclick="QUY.loc=\'' + l[0] + '\';veSoQuy()">' + l[1] + ' ' + n + '</button>'; }).join('');
   var ds = rows.filter(function (r) {
     if (!quyLocDong(r, QUY.loc)) return false;
@@ -2534,10 +2584,10 @@ function khongDau(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/
 function quyTenNguon(ma) { var n = ((QUY.dm[QUY.ma_da] || {}).nguon || []).filter(function (x) { return x.ma === ma; })[0]; return n ? n.ten : ma; }
 function quyCbHtml(s) { return String(s || '').split(',').filter(String).map(function (c) { var d = QUY_CB[c] || [c, 0]; return '<span class="qcb' + (d[1] ? ' do' : '') + '" title="' + esc(d[0]) + '">' + esc(c) + '</span>'; }).join(''); }
 function quyDongHtml(r) {
-  var dau = r.loai === 'THU' ? '+' : (r.loai === 'CHI' ? '−' : '⇄ ');
-  var nguon = r.loai === 'CHUYEN_NOI_BO' ? quyTenNguon(r.nguon_quy) + ' → ' + quyTenNguon(r.nguon_den) : quyTenNguon(r.nguon_quy);
+  var dau = r.loai === 'THU' ? '+' : (r.loai === 'CHI' ? '−' : (r.loai === 'CAN_TRU' ? '⊖ ' : '⇄ '));
+  var nguon = r.loai === 'CAN_TRU' ? 'cấn trừ, không qua quỹ' : (r.loai === 'CHUYEN_NOI_BO' ? quyTenNguon(r.nguon_quy) + ' → ' + quyTenNguon(r.nguon_den) : quyTenNguon(r.nguon_quy) + (r.can_tru_tu ? ' · cấn trừ ứng ' + tienVn(r.can_tru_tu) : ''));
   return '<div class="qr ' + r.loai + ' ' + r.trang_thai + '" onclick="moQuyCt(\'' + esc(r.gd_id) + '\')"><div class="t"><b>' + esc(r.ten_km) + '</b> · ' + esc(r.ten) +
-    '<br><small>' + esc(r.ngay) + ' · ' + esc(nguon) + ' · ' + (r.hinh_thuc === 'CK' ? 'CK' : 'TM') + (r.anh_ct ? ' · 📎' : '') + '</small><span class="nd">' + esc(r.noi_dung) + '</span>' + quyCbHtml(r.canh_bao) +
+    '<br><small>' + esc(r.ngay) + ' · ' + esc(nguon) + (r.loai === 'CAN_TRU' ? '' : ' · ' + (r.hinh_thuc === 'CK' ? 'CK' : 'TM')) + (r.anh_ct ? ' · 📎' : '') + '</small><span class="nd">' + esc(r.noi_dung) + '</span>' + quyCbHtml(r.canh_bao) +
     '</div><div class="tien">' + dau + dongVn(r.so_tien) + '<br><span class="tem q-' + r.trang_thai + '">' + (QUY_TT[r.trang_thai] || r.trang_thai) + '</span></div></div>';
 }
 function quyTimDong(id) {
@@ -2549,6 +2599,8 @@ function moQuyCt(id) {
   var dongs = [['Mã phiếu', r.gd_id], ['Trạng thái', (QUY_TT[r.trang_thai] || r.trang_thai) + (r.ly_do ? ' — ' + r.ly_do : '')], ['Ngày giao dịch', r.ngay + ' (kỳ ' + r.ky + ')'], ['Khoản mục', r.ma_km + ' — ' + r.ten_km],
     [r.loai === 'THU' ? 'Người nộp' : 'Người nhận', r.ten + (r.doi_tuong_id ? ' (' + r.doi_tuong_id + ')' : '')], ['Nội dung', r.noi_dung],
     ['Tổ đội / thầu phụ', r.ten_to_doi || '—'], ['Hình thức', r.hinh_thuc === 'CK' ? 'Chuyển khoản' : 'Tiền mặt' + ''], ['Nguồn quỹ', r.loai === 'CHUYEN_NOI_BO' ? quyTenNguon(r.nguon_quy) + ' → ' + quyTenNguon(r.nguon_den) : quyTenNguon(r.nguon_quy)]];
+  if (r.loai === 'CAN_TRU') dongs = dongs.filter(function (d) { return d[0] !== 'Hình thức' && d[0] !== 'Nguồn quỹ'; }).concat([['Tiền', 'Không đi qua quỹ — chỉ giảm số tạm ứng còn nợ'], ['Căn cứ', r.ghi_chu === 'BANG_LUONG' ? 'Bảng lương tháng' : 'Cấn trừ khác']]);
+  if (r.can_tru_tu) dongs.push(['Cấn trừ tạm ứng', tienDu(r.can_tru_tu) + ' (không qua quỹ) → giá trị khối lượng ' + tienDu(r.so_tien + r.can_tru_tu)]);
   if (r.hinh_thuc === 'CK') dongs.push(['Ngân hàng / TK nhận', [r.ngan_hang_nhan, r.tk4].filter(String).join(' · ') || '—'], ['Số tham chiếu', r.so_tham_chieu || '—']);
   dongs.push(['Số phiếu giấy', r.so_phieu || '—'], ['Chứng từ gốc', r.co_chung_tu ? 'Đã có' : 'Chưa'], ['Người lập', r.nguoi_nhap + ' · ' + r.tg_nhap]);
   if (r.nguoi_duyet) dongs.push(['Người duyệt', r.nguoi_duyet + ' · ' + r.tg_duyet]);
@@ -2601,7 +2653,7 @@ function moQuyForm(loai, gdId, ocr) {
   // v1.21: tổ đội app báo cáo
   var tdOpt = (dm.to_doi || []).map(function (t) { return '<option value="' + esc(t.ma) + '">' + esc(t.ten) + (t.loai === 'THAU_PHU' ? ' (thầu phụ)' : '') + '</option>'; }).join('');
   document.getElementById('qfToDoi').innerHTML = '<option value="">— chọn tổ đội / thầu phụ —</option>' + tdOpt;
-  g('qfToDoi', r ? r.ma_to_doi : '');
+  g('qfToDoi', r ? r.ma_to_doi : ''); g('qfCanTru', r && r.can_tru_tu ? dongVn(r.can_tru_tu) : '');
   // v1.21: điền từ biên lai AI đọc
   ['qfTien', 'qfNgay', 'qfTen', 'qfRef', 'qfKm', 'qfToDoi'].forEach(function (id) { document.getElementById(id).classList.remove('can-xem', 'thieu-chon'); });
   var og = document.getElementById('qfAnhGocO'); og.style.display = 'none'; document.getElementById('qfTrung').style.display = 'none';
@@ -2626,13 +2678,15 @@ function qfDoiHt() { document.getElementById('qfCkO').style.display = document.g
 function qfDoiKm() {                                       // v1.21: khoản mục tổ đội → hiện ô chọn tổ đội app báo cáo
   var dm = QUY.dm[QUY.ma_da] || {}, km = document.getElementById('qfKm').value, can = (dm.km_to_doi || []).indexOf(km) >= 0;
   document.getElementById('qfKm').classList.toggle('thieu-chon', !km && !!(QUY.form && QUY.form.hang_doi_id));
-  document.getElementById('qfToDoiO').style.display = can || document.getElementById('qfToDoi').value ? '' : 'none';
+  document.getElementById('qfToDoiO').style.display = can || km === 'THU_HOANUNG' || document.getElementById('qfToDoi').value ? '' : 'none';
+  qfTuCapNhat();
   document.getElementById('qfToDoi').classList.toggle('thieu-chon', can && !document.getElementById('qfToDoi').value && (dm.to_doi || []).length > 0);
 }
 function qfDinhDangTien(el) {
   var so = String(el.value || '').replace(/[^\d]/g, '').replace(/^0+(?=\d)/, '');
   el.value = so ? Number(so).toLocaleString('vi-VN') : '';
   document.getElementById('qfTienChu').textContent = so ? '= ' + tienVn(Number(so)) : '';
+  if (el.id === 'qfTien' && document.getElementById('qfCtO').style.display !== 'none') qfTuCapNhat();   // v1.22
 }
 function qfChonAnh(ev) {
   var f = ev.target.files && ev.target.files[0]; if (!f) { QUY.anh = null; return; }
@@ -2663,7 +2717,8 @@ function qfGui() {
   var goiDi = { ma_da: QUY.ma_da, gd_id: F.gd_id, loai: F.loai, ngay_gd: v('qfNgay'), so_tien: tien, ma_km: v('qfKm'), ten_nguoi_nhan: ten, doi_tuong_id: dt ? dt.id : '',
     noi_dung: v('qfNd'), hinh_thuc: ht, nguon_quy: v('qfNguon'), nguon_den: v('qfDen'), ngan_hang_nhan: v('qfNh'), tk_nhan: v('qfTk'), so_tham_chieu: v('qfRef'),
     so_phieu: v('qfSoPhieu'), co_chung_tu: document.getElementById('qfCt').checked, ghi_chu: v('qfGhiChu'), ly_do: v('qfLyDo'), thiet_bi: THIET_BI,
-    ma_to_doi: v('qfToDoi'), hang_doi_id: F.hang_doi_id || '' };
+    ma_to_doi: v('qfToDoi'), hang_doi_id: F.hang_doi_id || '',
+    can_tru_tu: document.getElementById('qfCtO').style.display !== 'none' && document.getElementById('qfTuO').style.display !== 'none' ? (Number(v('qfCanTru').replace(/[^\d]/g, '')) || 0) : 0 };
   if (QUY.anh) { goiDi.anh_base64 = QUY.anh; goiDi.anh_mime = 'image/jpeg'; }
   if (F.loai === 'CHI' && ht === 'CK' && !QUY.anh && !F.hang_doi_id && !(F.cu && F.cu.anh_ct) && !confirm('Chi chuyển khoản chưa có ảnh biên lai — phiếu sẽ bị gắn cảnh báo C1-ANH. Vẫn gửi?')) return;
   tai(true, 'Đang gửi phiếu quỹ…');
@@ -2694,6 +2749,126 @@ function quyHuy(id) {
   tai(true, 'Đang hủy…');
   api('quyHuy', { ma_da: QUY.ma_da, gd_id: id, ly_do: lyDo, thiet_bi: THIET_BI }, 60).then(function () { tai(false); dong('moQuyCt'); nhac('Đã hủy ' + id); taiQuy(true); })
     .catch(function (e) { tai(false); bao(e.message); });
+}
+/* ================= v1.22: GĐ3 TẠM ỨNG / HOÀN ỨNG / CẤN TRỪ =================
+   Máy chủ (Quy.gs v1.2) tính theo người / tổ: đầu kỳ + ứng (TD_UNG / UNG đã duyệt) − hoàn (THU_HOANUNG) − cấn trừ (TD can_tru_tu, phiếu CAN_TRU).
+   Dữ liệu đi kèm quyDuLieu (dl.tam_ung) — không gọi thêm. */
+var QTU = { loc: 'NO' };
+var QTU_LS = { DK: 'Đầu kỳ', UNG: 'Ứng', HOAN: 'Hoàn ứng', CT_TT: 'Cấn trừ khi thanh toán KL', CT: 'Cấn trừ' };
+function tuDs() { var dl = QUY.dl[QUY.ma_da]; return (dl && dl.tam_ung) || []; }
+function tuTim(khoa) { return tuDs().filter(function (x) { return x.khoa === khoa; })[0]; }
+function tuTheoTen(ten) { var k = khongDau(ten); if (!k) return null; return tuDs().filter(function (x) { return x.khoi === 'GIAN_TIEP' && khongDau(x.ten) === k; })[0] || null; }
+function veTamUng() {
+  var ds = tuDs(), khoi = document.getElementById('quyTuKhoi'); if (!khoi) return;
+  khoi.style.display = ds.length || (QUY.dl[QUY.ma_da] && QUY.dl[QUY.ma_da].tam_ung) ? '' : 'none';
+  var locs = [['NO', 'Còn nợ', function (x) { return x.con_lai > 0; }], ['TO_DOI', 'Tổ đội', function (x) { return x.khoi === 'TO_DOI' && x.con_lai > 0; }],
+    ['GIAN_TIEP', 'Gián tiếp', function (x) { return x.khoi === 'GIAN_TIEP' && x.con_lai > 0; }], ['QH', '⚠ Quá hạn', function (x) { return x.qua_han; }],
+    ['HET', 'Đã hết nợ', function (x) { return x.con_lai <= 0; }]];
+  var lc = locs.filter(function (l) { return l[0] === QTU.loc; })[0] || locs[0];
+  document.getElementById('quyTuLoc').innerHTML = locs.map(function (l) { return '<button class="' + (QTU.loc === l[0] ? 'chon' : '') + '" onclick="QTU.loc=\'' + l[0] + '\';veTamUng()">' + l[1] + ' ' + ds.filter(l[2]).length + '</button>'; }).join('');
+  var no = ds.filter(function (x) { return x.con_lai > 0; });
+  document.getElementById('quyTuSo').textContent = no.length ? '(' + no.length + ')' : '';
+  var dl = QUY.dl[QUY.ma_da] || {};
+  document.getElementById('quyTuNho').textContent = 'Tổ đội: chốt khối lượng ngày 30, thanh toán 5–10 → quá ngày 10 tháng sau chưa cấn trừ = quá hạn. Gián tiếp: không có hạn, trừ qua bảng lương.' + (dl.tam_ung_dau_ky ? '' : ' Chưa nạp số dư đầu kỳ (chốt 30/09).');
+  var ht = ds.filter(lc[2]);
+  document.getElementById('quyTuDs').innerHTML = ht.length ? ht.map(function (x) {
+    var ph = [x.dau_ky ? 'đầu kỳ ' + tienVn(x.dau_ky) : '', x.ung ? 'ứng ' + tienVn(x.ung) : '', x.hoan ? 'hoàn ' + tienVn(x.hoan) : '', x.can_tru ? 'cấn trừ ' + tienVn(x.can_tru) : ''].filter(String).join(' · ');
+    var cho = [x.cho_ung ? '+' + tienVn(x.cho_ung) + ' ứng' : '', x.cho_giam ? '−' + tienVn(x.cho_giam) + ' hoàn/cấn trừ' : ''].filter(String).join(' · ');
+    return '<div class="tu-r' + (x.con_lai <= 0 ? ' het' : '') + '" onclick="moTuCt(\'' + esc(x.khoa) + '\')"><div class="t"><b>' + esc(x.ten || x.khoa) + '</b> <small style="display:inline">' + (x.khoi === 'TO_DOI' ? '· tổ đội' : '· gián tiếp') + '</small>' + (x.qua_han ? '<span class="tu-qh">QUÁ HẠN ' + esc(x.han) + '</span>' : '') +
+      '<small>' + esc(ph || '—') + '</small>' + (x.con_lai > 0 && x.ngay_cu_nhat ? '<small>Khoản còn nợ cũ nhất: ' + esc(x.ngay_cu_nhat) + (x.so_ngay != null ? ' (' + x.so_ngay + ' ngày)' : '') + (x.han && !x.qua_han ? ' · hạn cấn trừ ' + esc(x.han) : '') + '</small>' : '') +
+      (cho ? '<small style="color:#B36B00">Chờ duyệt: ' + esc(cho) + '</small>' : '') + '</div><div class="tien">' + tienDu(x.con_lai) + '</div></div>';
+  }).join('') : '<div class="nho-mo" style="padding:8px 0">Không có dòng nào.</div>';
+}
+function moTuCt(khoa) {
+  var x = tuTim(khoa); if (!x) return;
+  document.getElementById('qtuTieuDe').textContent = (x.ten || x.khoa) + ' · còn ' + tienDu(x.con_lai);
+  var h = '<div class="nho-mo" style="margin:2px 0 8px">' + (x.khoi === 'TO_DOI' ? 'Tổ đội' : 'Khối gián tiếp') + (x.qua_han ? ' · <b style="color:var(--do)">QUÁ HẠN cấn trừ (hạn ' + esc(x.han) + ')</b>' : (x.han ? ' · hạn cấn trừ ' + esc(x.han) : '')) + '</div>';
+  h += '<table class="qct" style="width:100%;border-collapse:collapse"><tr><td>Đầu kỳ</td><td>' + tienDu(x.dau_ky) + '</td></tr><tr><td>Ứng (đã duyệt)</td><td>' + tienDu(x.ung) + '</td></tr><tr><td>Hoàn ứng</td><td>' + tienDu(x.hoan) + '</td></tr><tr><td>Cấn trừ</td><td>' + tienDu(x.can_tru) + '</td></tr><tr><td><b>Còn nợ</b></td><td><b>' + tienDu(x.con_lai) + '</b></td></tr></table>';
+  h += '<h4 style="margin:10px 0 4px;font-size:13px">Lịch sử</h4>' + (x.ls || []).map(function (l) {
+    var tru = l.loai !== 'DK' && l.loai !== 'UNG';
+    return '<div class="ctl-r"><div class="t"><b>' + esc(QTU_LS[l.loai] || l.loai) + '</b> · ' + esc(l.ngay) + (l.gd_id ? ' · ' + esc(l.gd_id) : '') + (l.tt && l.tt !== 'DA_DUYET' ? ' <span class="tem q-' + l.tt + '">' + (QUY_TT[l.tt] || l.tt) + '</span>' : '') + '<br><small>' + esc(l.nd || '') + (l.nguoi && x.khoi === 'TO_DOI' ? ' · người nhận ' + esc(l.nguoi) : '') + '</small></div><div style="font-weight:700;color:' + (tru ? 'var(--ok)' : '#6a1b9a') + '">' + (tru ? '−' : '+') + tienVn(l.so_tien) + '</div></div>';
+  }).join('');
+  document.getElementById('qtuNoiDung').innerHTML = h;
+  var k = esc(x.khoa), n = '<button class="nut ok" onclick="dong(\'moQuyTu\');tuMoForm(\'HOAN\',\'' + k + '\')">＋ Hoàn ứng (nộp tiền vào quỹ)</button>';
+  if (x.khoi === 'TO_DOI') n += '<button class="nut phu" onclick="dong(\'moQuyTu\');tuMoForm(\'TT\',\'' + k + '\')">💸 Thanh toán khối lượng + cấn trừ ứng</button>';
+  n += '<button class="nut phu" onclick="tuCanTruMot(\'' + k + '\')">⊖ Cấn trừ không qua quỹ</button>';
+  document.getElementById('qtuNut').innerHTML = x.con_lai > 0 ? n : '';
+  document.getElementById('moQuyTu').classList.add('hien');
+}
+function tuMoForm(kieu, khoa) {
+  var x = tuTim(khoa); if (!x) return;
+  moQuyForm(kieu === 'HOAN' ? 'THU' : 'CHI');
+  var g = function (id, v) { document.getElementById(id).value = v; };
+  g('qfKm', kieu === 'HOAN' ? 'THU_HOANUNG' : 'TD');
+  if (x.khoi === 'TO_DOI') {                                   // tổ đã nghỉ (không còn trong danh sách app báo cáo) vẫn hoàn / cấn trừ được
+    var sel = document.getElementById('qfToDoi');
+    if (!Array.prototype.some.call(sel.options, function (o) { return o.value === x.ma_to_doi; })) { var op = document.createElement('option'); op.value = x.ma_to_doi; op.textContent = x.ten + ' (đã nghỉ)'; sel.appendChild(op); }
+    g('qfToDoi', x.ma_to_doi); g('qfTen', x.ten);
+  } else g('qfTen', x.ten);
+  g('qfHt', kieu === 'HOAN' ? 'TIEN_MAT' : 'CK'); qfDoiHt();
+  g('qfNd', kieu === 'HOAN' ? 'Hoàn ứng ' + x.ten : 'Thanh toán khối lượng tháng ' + ('0' + (new Date().getMonth() + 1)).slice(-2) + ' ' + x.ten);
+  qfDoiKm();
+}
+function tuCanTruMot(khoa) {
+  var x = tuTim(khoa); if (!x) return;
+  var so = prompt('Số tiền cấn trừ cho ' + x.ten + ' (còn nợ ' + tienDu(x.con_lai) + '):', ''); if (so === null) return;
+  so = Number(String(so).replace(/[^\d]/g, '')) || 0; if (!(so > 0)) return bao('Số tiền phải lớn hơn 0');
+  var dg = prompt('Diễn giải (VD: trừ vào quyết toán tháng 9, trừ tiền ăn…):', ''); if (dg === null) return;
+  tai(true, 'Đang gửi cấn trừ…');
+  api('quyCanTru', { ma_da: QUY.ma_da, nguon: 'KHAC', dong: [{ khoa: khoa, so_tien: so, dien_giai: dg }], thiet_bi: THIET_BI }, 60).then(function (kq) {
+    tai(false); dong('moQuyTu'); nhac('Đã gửi duyệt cấn trừ ' + (kq.gd_ids || []).join(', ')); taiQuy(true);
+  }).catch(function (e) { tai(false); bao(e.message); });
+}
+function qfDinhDangCt(el) {
+  var so = String(el.value || '').replace(/[^\d]/g, '').replace(/^0+(?=\d)/, '');
+  el.value = so ? Number(so).toLocaleString('vi-VN') : ''; qfTuCapNhat();
+}
+/* Form: báo số còn nợ ứng của tổ / người, ô cấn trừ khi thanh toán TD, người nhận không phải tổ trưởng */
+function qfTuCapNhat() {
+  var o = document.getElementById('qfTuO'); if (!o || !QUY.form) return;
+  var km = document.getElementById('qfKm').value, maTd = document.getElementById('qfToDoi').value, ten = document.getElementById('qfTen').value.trim();
+  var dm = QUY.dm[QUY.ma_da] || {}, td = (dm.to_doi || []).filter(function (t) { return t.ma === maTd; })[0], F = QUY.form;
+  var x = maTd ? tuTim('TD:' + maTd) : tuTheoTen(ten), nho = [], ctHien = false;
+  if (F.cu && F.cu.can_tru_tu && x && F.cu.trang_thai === 'DA_DUYET') x = Object.assign({}, x, { con_lai: x.con_lai + F.cu.can_tru_tu });
+  if (km === 'TD' && F.loai === 'CHI' && maTd) {
+    ctHien = !!(x && x.con_lai > 0) || !!document.getElementById('qfCanTru').value;
+    nho.push(x && x.con_lai > 0 ? 'Tổ đang còn tạm ứng <b>' + tienDu(x.con_lai) + '</b>' + (x.ngay_cu_nhat ? ' (khoản cũ nhất ' + esc(x.ngay_cu_nhat) + ')' : '') + '. Số tiền phiếu = <b>số thực chuyển</b> (mục L "Giá trị đề nghị thanh toán" trên bill); phần trừ ứng (mục K.4 kỳ này) ghi ở ô dưới.' : 'Tổ không còn tạm ứng chưa hoàn.');
+    var ct = Number(document.getElementById('qfCanTru').value.replace(/[^\d]/g, '')) || 0, tien = Number(document.getElementById('qfTien').value.replace(/[^\d]/g, '')) || 0;
+    document.getElementById('qfCtChu').innerHTML = ct ? 'Giá trị khối lượng = ' + tienVn(tien) + ' + ' + tienVn(ct) + ' = <b>' + tienDu(tien + ct) + '</b>' + (x && ct > x.con_lai ? ' · <span class="do">vượt số còn nợ ' + tienVn(x.con_lai) + '</span>' : '') : '';
+  } else if ((km === 'TD_UNG' || km === 'UNG') && x && x.con_lai > 0) nho.push('⚠ ' + esc(x.ten) + ' đang còn tạm ứng <b>' + tienDu(x.con_lai) + '</b> chưa hoàn' + (x.qua_han ? ' — <span class="do">QUÁ HẠN cấn trừ</span>' : '') + '.');
+  else if (km === 'THU_HOANUNG') nho.push(x ? esc(x.ten) + ' còn nợ ứng <b>' + tienDu(x.con_lai) + '</b>.' : 'Chọn tổ đội (khối trực tiếp) hoặc gõ đúng tên người ứng (khối gián tiếp) để trừ đúng người.');
+  if ((km === 'TD' || km === 'TD_UNG') && F.loai === 'CHI' && td && td.loai !== 'THAU_PHU' && ten && (' ' + khongDau(td.ten) + ' ').indexOf(' ' + khongDau(ten) + ' ') < 0 && (' ' + khongDau(ten) + ' ').indexOf(' ' + khongDau(td.ten) + ' ') < 0)
+    nho.push('<span class="do">⚠ Người nhận "' + esc(ten) + '" không trùng tên tổ trưởng (' + esc(td.ten) + ') — phiếu sẽ gắn cảnh báo, CHT xác nhận khi duyệt.</span>');
+  document.getElementById('qfTuNho').innerHTML = nho.join('<br>');
+  document.getElementById('qfCtO').style.display = ctHien ? '' : 'none';
+  o.style.display = nho.length || ctHien ? '' : 'none';
+}
+/* Cấn trừ theo bảng lương tháng — khối gián tiếp */
+function moCanTruLuong() {
+  var ds = tuDs().filter(function (x) { return x.khoi === 'GIAN_TIEP' && x.con_lai > 0; });
+  if (!ds.length) return bao('Không có người khối gián tiếp nào đang còn tạm ứng.');
+  var d = new Date(); d.setMonth(d.getMonth() - (d.getDate() <= 15 ? 1 : 0));
+  document.getElementById('ctlKy').value = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2);
+  var n = new Date(); n.setMinutes(n.getMinutes() - n.getTimezoneOffset()); document.getElementById('ctlNgay').value = n.toISOString().slice(0, 10);
+  document.getElementById('ctlDs').innerHTML = ds.map(function (x) {
+    return '<div class="ctl-r"><div class="t"><b>' + esc(x.ten) + '</b><br><small>còn nợ ' + tienVn(x.con_lai) + (x.ngay_cu_nhat ? ' · từ ' + esc(x.ngay_cu_nhat) : '') + '</small></div><input inputmode="numeric" data-khoa="' + esc(x.khoa) + '" data-no="' + x.con_lai + '" placeholder="0" oninput="ctlSo(this)"></div>';
+  }).join('');
+  document.getElementById('ctlLoi').style.display = 'none'; ctlTong();
+  document.getElementById('moQuyCtl').classList.add('hien');
+}
+function ctlSo(el) { var so = String(el.value || '').replace(/[^\d]/g, '').replace(/^0+(?=\d)/, ''); el.value = so ? Number(so).toLocaleString('vi-VN') : ''; ctlTong(); }
+function ctlDienHet() { Array.prototype.forEach.call(document.querySelectorAll('#ctlDs input'), function (i) { i.value = Number(i.getAttribute('data-no')).toLocaleString('vi-VN'); }); ctlTong(); }
+function ctlDong() { return Array.prototype.map.call(document.querySelectorAll('#ctlDs input'), function (i) { return { khoa: i.getAttribute('data-khoa'), so_tien: Number(i.value.replace(/[^\d]/g, '')) || 0, no: Number(i.getAttribute('data-no')) }; }).filter(function (x) { return x.so_tien > 0; }); }
+function ctlTong() { var d = ctlDong(), t = d.reduce(function (s, x) { return s + x.so_tien; }, 0), v = d.filter(function (x) { return x.so_tien > x.no; }).length; document.getElementById('ctlTong').innerHTML = d.length + ' người · tổng <b>' + tienDu(t) + '</b>' + (v ? ' · <span style="color:var(--do)">' + v + ' người vượt số còn nợ</span>' : ''); }
+function ctlGui() {
+  var d = ctlDong(), ky = document.getElementById('ctlKy').value, el = document.getElementById('ctlLoi');
+  if (!d.length) { el.style.display = 'block'; el.textContent = 'Chưa nhập số tiền cấn trừ cho ai.'; return; }
+  if (!ky) { el.style.display = 'block'; el.textContent = 'Chọn tháng của bảng lương.'; return; }
+  if (!confirm('Gửi duyệt cấn trừ ' + d.length + ' người theo bảng lương tháng ' + ky.slice(5) + '/' + ky.slice(0, 4) + '?')) return;
+  tai(true, 'Đang gửi cấn trừ…');
+  api('quyCanTru', { ma_da: QUY.ma_da, nguon: 'BANG_LUONG', ky: ky, ngay: document.getElementById('ctlNgay').value, dong: d.map(function (x) { return { khoa: x.khoa, so_tien: x.so_tien }; }), yc_id: 'CTL-' + Date.now(), thiet_bi: THIET_BI }, 90).then(function (kq) {
+    tai(false); dong('moQuyCtl'); nhac('Đã gửi duyệt ' + (kq.gd_ids || []).length + ' phiếu cấn trừ — CHT / GĐDA duyệt trong khối Chờ duyệt', 6); taiQuy(true);
+  }).catch(function (e) { tai(false); el.style.display = 'block'; el.textContent = e.message; });
 }
 /* ================= v1.21: BIÊN LAI CHUYỂN KHOẢN — AI ĐỌC NỀN (như phiếu kho) ================= */
 var QBL = { ds: {}, gui: [], loai: 'CHI', hen: null, daXongCu: -1, dangTai: false };
