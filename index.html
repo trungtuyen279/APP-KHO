@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.22.0 (GitHub Pages) · 27/09/2026 · đi cùng Code v0.24.0 + Quy v1.2.0 + OCR v1.9.2
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.23.0 (GitHub Pages) · 27/09/2026 · đi cùng Code v0.25.0 + Quy v1.3.0 + SoQuy v1.0.0 + OCR v1.9.2
+  v1.23.0 — SỔ QUỸ DẠNG BẢNG (F5-WNC, anh chốt 27/09): kế toán nhập sổ Google Sheets như sheet F5 cũ, app đọc về. Màn Quỹ có khối "📗 Sổ quỹ kế toán":
+     Mở sổ · ⟳ Đồng bộ ngay · lần đồng bộ gần nhất · danh sách phiếu CẦN SỬA Ở SỔ (thiếu người nhận, tổ đội không khớp, mã lạ, số âm, chờ kế toán
+     xác nhận). Phiếu từ sổ: không sửa / hủy trên app (sửa trong sổ). Lập Thu / Chi / OCR ở công trình có sổ → app ghi thêm 1 dòng vào cuối sổ, phiếu
+     tính tồn ngay, gắn cờ "chờ kế toán xác nhận" đến khi có số phiếu.
   v1.22.0 — GĐ3 TẠM ỨNG / HOÀN ỨNG / CẤN TRỪ (anh chốt 27/09): thanh tồn quỹ hiện "Tạm ứng chưa hoàn: tổ đội … · gián tiếp …" (chạm → khối Tạm ứng);
      khối "💳 Tạm ứng chưa hoàn" (lọc Còn nợ / Tổ đội / Gián tiếp / Quá hạn / Đã hết nợ) → chạm 1 người / tổ: lịch sử đầu kỳ · ứng · hoàn · cấn trừ,
      nút Hoàn ứng (phiếu Thu THU_HOANUNG) · Thanh toán khối lượng + cấn trừ (tổ đội) · Cấn trừ không qua quỹ; nút "Cấn trừ theo bảng lương tháng"
@@ -748,6 +752,14 @@
     <label>Công trình</label><select id="quyDuAn" onchange="doiDuAnQuy(this.value)"></select>
   </div>
   <div class="qt" id="quyTon"><div class="qt-dau"><span>TỒN QUỸ</span></div><div class="qt-so">…</div><div class="qt-nho">Đang tải…</div></div>
+  <div class="the" id="quySoKhoi" style="display:none;scroll-margin-top:60px">
+    <h3 style="font-size:14px;margin:0 0 2px">📗 Sổ quỹ kế toán (Google Sheets)</h3>
+    <div class="nho-mo" id="quySoNho" style="margin-bottom:6px"></div>
+    <div style="display:flex;gap:6px"><a class="nut phu nho" id="quySoMo" style="flex:1;margin:0;text-align:center;text-decoration:none" target="_blank" rel="noopener">📂 Mở sổ</a>
+      <button class="nut nho" style="flex:1;margin:0" onclick="quySoDongBo()">⟳ Đồng bộ ngay</button></div>
+    <div id="quySoLoiNut" style="margin-top:6px"></div>
+    <div id="quySoLoiDs" style="display:none"></div>
+  </div>
   <div class="the" id="quyBlKhoi" style="display:none;scroll-margin-top:60px">
     <h3 style="font-size:14px;margin:0 0 2px">🧾 Biên lai AI đọc <span id="quyBlSo"></span></h3>
     <div class="nho-mo" id="quyBlNho" style="margin-bottom:4px"></div>
@@ -2458,7 +2470,10 @@ var QUY_CB = { 'C4-GAN': ['Nghi trùng: cùng người, cùng số tiền trong 
   'C1-LON': ['Khoản lớn chưa có chứng từ gốc', 1], 'C7-TM': ['Tiền mặt vượt ngưỡng — đề nghị KTT xác nhận', 0], 'C9-CHUNG': ['Nội dung chung chung — ghi rõ hơn', 0],
   'QUY-AM': ['Nguồn quỹ âm sau khi duyệt — kiểm tra chứng từ thiếu / ghi sai nguồn', 1],
   'C6-CONNO': ['Người / tổ này đang còn tạm ứng chưa hoàn', 0], 'C6-VUOT': ['Hoàn / cấn trừ nhiều hơn số còn nợ ứng — kiểm tra số đầu kỳ, phiếu cũ', 1],
-  'C6-TOTRUONG': ['Người nhận không phải tổ trưởng (người ký hợp đồng) — CHT xác nhận ủy quyền', 1] };
+  'C6-TOTRUONG': ['Người nhận không phải tổ trưởng (người ký hợp đồng) — CHT xác nhận ủy quyền', 1],
+  'SO-THIEU-TEN': ['Sổ quỹ: thiếu người nhận / nộp (cột C)', 0], 'SO-TO-DOI': ['Sổ quỹ: tên tổ ở cột C không khớp tổ nào trong app báo cáo', 0],
+  'SO-MA-LA': ['Sổ quỹ: mã khoản (cột B) trống / lạ — tạm xếp Chi khác / Thu khác', 0], 'SO-SO-AM': ['Sổ quỹ: số tiền âm — đã đảo thành phiếu ngược chiều', 1],
+  'SO-THIEU-NGAY': ['Sổ quỹ: thiếu ngày — tạm lấy ngày dòng trên', 1], 'SO-CHO-XN': ['Dòng app / OCR thêm vào sổ — chờ kế toán ghi số phiếu xác nhận', 0] };
 var QUY_TT = { CHO_DUYET: 'Chờ duyệt', DA_DUYET: 'Đã duyệt', TU_CHOI: 'Bị trả lại', HUY: 'Đã hủy' };
 var QUY_LOAI = { THU: 'Phiếu thu', CHI: 'Phiếu chi', CHUYEN_NOI_BO: 'Chuyển quỹ nội bộ', CAN_TRU: 'Cấn trừ tạm ứng (không qua quỹ)' };
 function coQuy() { return !!(DL && DL.quy && DL.quy.duoc && (DL.quy.du_an || []).length); }
@@ -2544,6 +2559,7 @@ function veQuy() {
     return quyDongHtml(r) + '<div style="display:flex;gap:6px;margin:-2px 0 8px"><button class="nut ok nho" style="flex:1;margin:0" onclick="quyDuyet(\'' + esc(r.gd_id) + '\',true)">✔ Duyệt</button><button class="nut do nho" style="flex:1;margin:0" onclick="quyDuyet(\'' + esc(r.gd_id) + '\',false)">✕ Trả lại</button></div>';
   }).join('');
   veTamUng();                                                 // v1.22
+  veSoKeToan(dl.so);                                          // v1.23: sổ quỹ dạng bảng
   // bộ lọc sổ quỹ
   var kySel = document.getElementById('quyKy'), kyDs = (dl.ky_ds || []).slice();
   kySel.innerHTML = kyDs.map(function (k) { return '<option value="' + k + '">Kỳ ' + k + '</option>'; }).join('') + '<option value="TAT_CA">Tất cả kỳ</option>';
@@ -2552,6 +2568,29 @@ function veQuy() {
   ng.innerHTML = '<option value="">Mọi nguồn</option>' + (t.theo_nguon || []).map(function (n) { return '<option value="' + esc(n.ma) + '">' + esc(n.ten) + '</option>'; }).join('');
   ng.value = ngCu;
   veSoQuy();
+}
+/* v1.23: sổ quỹ kế toán (Google Sheets) */
+function veSoKeToan(so) {
+  var k = document.getElementById('quySoKhoi'); if (!k) return;
+  k.style.display = so ? '' : 'none'; if (!so) return;
+  var l = so.luc;
+  document.getElementById('quySoNho').innerHTML = 'Kế toán nhập sổ như sheet ' + esc(so.sheet) + ' cũ — app tự đọc 30 phút / lần. ' +
+    (l ? 'Lần đồng bộ gần nhất: <b>' + esc(l.luc) + '</b>' + (l.moi || l.sua || l.huy ? ' (mới ' + l.moi + ' · sửa ' + l.sua + ' · hủy ' + l.huy + ')' : ' (không thay đổi)') + (l.lech ? ' · <b style="color:var(--do)">⚠ tồn app lệch sổ</b>' : '') : 'Chưa đồng bộ lần nào.') +
+    '<br>Phiếu từ sổ sửa / xóa trong sổ. Lập Thu / Chi / chụp biên lai trên app → app ghi thêm dòng vào cuối sổ (nền xanh).';
+  document.getElementById('quySoMo').href = so.url;
+  var n = so.so_loi || 0;
+  document.getElementById('quySoLoiNut').innerHTML = n ? '<button class="nut phu nho" style="margin:0;width:100%;color:#b45309;border-color:#f0c36d" onclick="var d=document.getElementById(\'quySoLoiDs\');d.style.display=d.style.display===\'none\'?\'\':\'none\'">⚠ ' + n + ' phiếu cần sửa ở sổ' + (so.cho_xn ? ' · ' + so.cho_xn + ' dòng chờ kế toán xác nhận' : '') + ' (nhấn để xem)</button>' : '<div class="nho-mo" style="color:var(--ok)">✔ Sổ không có dòng cần sửa.</div>';
+  document.getElementById('quySoLoiDs').innerHTML = (so.loi || []).map(function (x) {
+    return '<div class="qr ' + esc(x.loai) + '" onclick="moQuyCt(\'' + esc(x.gd_id) + '\')"><div class="t"><b>' + esc(x.ngay) + '</b> · ' + esc(x.ten || '(trống)') + '<span class="nd">' + esc(x.nd) + '</span><small style="color:#b45309">' + x.cb.map(esc).join('<br>') + '</small></div><div class="tien">' + (x.loai === 'THU' ? '+' : '−') + dongVn(x.so_tien) + '</div></div>';
+  }).join('') + (n > (so.loi || []).length ? '<div class="nho-mo">… còn ' + (n - so.loi.length) + ' dòng — lọc "⚠ Cảnh báo" ở sổ quỹ bên dưới.</div>' : '');
+}
+function quySoDongBo() {
+  tai(true, 'Đang đọc sổ quỹ kế toán…');
+  api('quySoDongBo', { ma_da: QUY.ma_da, thiet_bi: THIET_BI }, 120).then(function (kq) {
+    tai(false); var k = kq.ket_qua || {};
+    nhac('Đồng bộ sổ xong: mới ' + k.moi + ' · sửa ' + k.sua + ' · hủy ' + k.huy + (k.loi ? ' · ' + k.loi + ' dòng cần sửa' : '') + (k.lech ? ' · ⚠ tồn lệch' : ''), 6);
+    taiQuy(true);
+  }).catch(function (e) { tai(false); bao(e.message); });
 }
 function quyLocDong(r, loc) {
   if (loc === 'THU' || loc === 'CHI' || loc === 'CHUYEN_NOI_BO' || loc === 'CAN_TRU') return r.loai === loc && r.trang_thai !== 'HUY';
@@ -2613,6 +2652,7 @@ function moQuyCt(id) {
   if (r.duyet) n += '<button class="nut ok" onclick="quyDuyet(\'' + esc(r.gd_id) + '\',true)">✔ Duyệt</button><button class="nut do" onclick="quyDuyet(\'' + esc(r.gd_id) + '\',false)">✕ Trả lại kế toán</button>';
   if (r.sua) n += '<button class="nut phu" onclick="dong(\'moQuyCt\');moQuyForm(\'' + r.loai + '\',\'' + esc(r.gd_id) + '\')">✎ Sửa' + (r.trang_thai === 'TU_CHOI' ? ' và gửi lại' : (r.trang_thai === 'DA_DUYET' ? ' (phiếu đã duyệt — ghi lý do)' : '')) + '</button>';
   if (r.huy) n += '<button class="nut phu" style="color:var(--do);border-color:var(--do)" onclick="quyHuy(\'' + esc(r.gd_id) + '\')">🗑 Hủy phiếu</button>';
+  if (r.so) { var so = (QUY.dl[QUY.ma_da] || {}).so; n += '<div class="nho-mo" style="margin:6px 0">📗 Phiếu lấy từ sổ quỹ kế toán — sửa / xóa trực tiếp trong sổ, app tự cập nhật khi đồng bộ.</div>' + (so ? '<a class="nut phu" style="text-align:center;text-decoration:none" href="' + esc(so.url) + '" target="_blank" rel="noopener">📂 Mở sổ quỹ</a>' : ''); }
   document.getElementById('qcNut').innerHTML = n;
   document.getElementById('moQuyCt').classList.add('hien');
 }
@@ -2726,7 +2766,8 @@ function qfGui() {
     tai(false); dong('moQuyForm');
     if (kq.doi_tuong_moi && ten && !dt) dm.doi_tuong.push({ id: '', ten: ten, loai: '', tk4: '' });
     var cb = (kq.canh_bao || []).filter(String);
-    nhac('Đã ' + (F.gd_id ? 'lưu ' : 'gửi ') + kq.gd_id + (cb.length ? ' · cảnh báo: ' + cb.join(', ') : ''), cb.length ? 7 : 4);
+    nhac(kq.so ? 'Đã ghi ' + kq.gd_id + ' vào sổ quỹ kế toán (dòng mới nền xanh) — tính tồn ngay, chờ kế toán ghi số phiếu' + (cb.length ? ' · cảnh báo: ' + cb.join(', ') : '') :
+      'Đã ' + (F.gd_id ? 'lưu ' : 'gửi ') + kq.gd_id + (cb.length ? ' · cảnh báo: ' + cb.join(', ') : ''), cb.length || kq.so ? 7 : 4);
     if (kq.ton && QUY.dl[QUY.ma_da]) QUY.dl[QUY.ma_da].ton = kq.ton;
     if (F.hang_doi_id) { var b = QBL.ds[QUY.ma_da]; if (b) b.ds = b.ds.filter(function (x) { return x.id !== F.hang_doi_id; }); quyBlVe(); quyBlTai(true); }
     taiQuy(true);
