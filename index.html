@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.23.0 (GitHub Pages) · 27/09/2026 · đi cùng Code v0.25.0 + Quy v1.3.0 + SoQuy v1.0.0 + OCR v1.9.2
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.24.0 (GitHub Pages) · 27/09/2026 · đi cùng Code v0.25.0 + Quy v1.4.0 + SoQuy v1.1.1 + OCR v1.9.2
+  v1.24.0 — KTX-WNC: nguồn "chi trực tiếp" (QUY_NGUON.tinh_ton = KHONG, vd KTX-WNC: Mr Yên) hiện màu xám kèm nhãn, không cộng vào tồn quỹ công trường, không báo âm.
   v1.23.0 — SỔ QUỸ DẠNG BẢNG (F5-WNC, anh chốt 27/09): kế toán nhập sổ Google Sheets như sheet F5 cũ, app đọc về. Màn Quỹ có khối "📗 Sổ quỹ kế toán":
      Mở sổ · ⟳ Đồng bộ ngay · lần đồng bộ gần nhất · danh sách phiếu CẦN SỬA Ở SỔ (thiếu người nhận, tổ đội không khớp, mã lạ, số âm, chờ kế toán
      xác nhận). Phiếu từ sổ: không sửa / hủy trên app (sửa trong sổ). Lập Thu / Chi / OCR ở công trình có sổ → app ghi thêm 1 dòng vào cuối sổ, phiếu
@@ -287,6 +288,7 @@
   .qt-nguon{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:6px}
   .qt-nguon span{background:#f4f6f9;border-radius:12px;padding:2px 9px;font-size:12.5px;white-space:nowrap}
   .qt-nguon span.am{background:#ffcdd2;color:#b71c1c;font-weight:700}
+  .qt-nguon span.tt{background:#eceff1;color:#607d8b;font-style:italic}
   .qt-dong{font-size:12.5px;margin-top:4px}
   .qt-dong.cb{color:#b45309;font-weight:700;cursor:pointer} .qt-dong.vang{color:#8a5a00}
   .qr{display:flex;gap:8px;padding:9px 4px;border-bottom:1px solid var(--vien);cursor:pointer;align-items:flex-start}
@@ -2540,7 +2542,7 @@ function veQuy() {
   var h = '<div class="qt-dau"><span>TỒN QUỸ ' + esc(quyTenDa(m)).toUpperCase() + ' <small style="font-weight:400">(đến ' + esc(t.luc || dl.luc || '') + ')</small></span><button onclick="taiQuy(true)">↻</button></div>';
   h += '<div class="qt-so">' + tienDu(t.tong) + '</div>';
   h += '<div class="qt-nho">Kỳ ' + esc(t.ky) + ': Thu <b style="color:var(--ok)">+' + tienVn(t.thu_ky) + '</b> · Chi <b style="color:var(--do)">−' + tienVn(t.chi_ky) + '</b> (đã duyệt, không tính chuyển nội bộ)</div>';
-  h += '<div class="qt-nguon">' + (t.theo_nguon || []).map(function (n) { return '<span class="' + (n.am ? 'am' : '') + '">' + esc(n.ten) + ' ' + tienDu(n.ton) + '</span>'; }).join('') + '</div>';
+  h += '<div class="qt-nguon">' + (t.theo_nguon || []).map(function (n) { if (n.truc_tiep) return '<span class="tt" title="Nguồn chi trực tiếp — không tính vào tồn quỹ công trường">' + esc(n.ten) + ' · chi trực tiếp ' + tienVn(n.chi) + '</span>'; return '<span class="' + (n.am ? 'am' : '') + '">' + esc(n.ten) + ' ' + tienDu(n.ton) + '</span>'; }).join('') + '</div>';
   if (t.cho_duyet && t.cho_duyet.so) h += '<div class="qt-dong">⏳ Chờ duyệt: <b>' + t.cho_duyet.so + ' phiếu</b>' + (t.cho_duyet.tien_chi ? ' · chi ' + tienDu(t.cho_duyet.tien_chi) : '') + (t.cho_duyet.tien_thu ? ' · thu ' + tienDu(t.cho_duyet.tien_thu) : '') + ' → tồn dự kiến <b>' + tienDu(t.du_kien) + '</b></div>';
   var tu = t.tam_ung;                                          // v1.22: GĐ3 tạm ứng
   if (tu && tu.tong > 0) h += '<div class="qt-dong tu" onclick="document.getElementById(\'quyTuKhoi\').scrollIntoView({behavior:\'smooth\'})">💳 Tạm ứng chưa hoàn: <b>' + tienDu(tu.tong) + '</b> (tổ đội ' + tienVn(tu.to_doi) + ' · gián tiếp ' + tienVn(tu.gian_tiep) + ') · ' + tu.so + ' người/tổ' + (tu.qua_han ? ' · <b style="color:var(--do)">⚠ ' + tu.qua_han + ' tổ quá hạn cấn trừ</b>' : '') + '</div>';
