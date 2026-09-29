@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.25.0 (GitHub Pages) · 29/09/2026 · đi cùng Code v0.25.0 + Quy v1.4.0 + SoQuy v1.2.1 + OCR v1.9.2
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.26.0 (GitHub Pages) · 29/09/2026 · đi cùng Code v0.25.0 + Quy v1.4.0 + SoQuy v1.2.1 + OCR v1.9.2
+  v1.26.0 — QUỸ MỞ NGAY (gộp lại bản lưu-trên-máy Phiên 30 sáng, bị bản 1.25.0 sửa ô số tiền ghi đè trên GitHub): dữ liệu Tồn quỹ / Sổ quỹ / danh mục quỹ
+     LƯU TRÊN ĐIỆN THOẠI (IndexedDB 'l13fc_kho', khóa email|công trình). Mở Tồn quỹ / Sổ quỹ → hiện NGAY số lần trước (dòng "📱 Số lưu trên máy lúc … ·
+     đang cập nhật"), tải mới ngầm rồi tự thay. Mở app 1,5 s tự tải ngầm quỹ. Mất mạng vẫn xem số đã lưu. Đăng xuất → xóa dữ liệu quỹ trên máy.
   v1.25.0 — SỬA Ô SỐ TIỀN (kế toán KTX báo 29/09: nhập tay ra "666.666.666"): ô tiền tự thêm dấu chấm khi gõ làm bàn phím điện thoại
      (đang gõ dở – composition) nhân đôi số / nhảy con trỏ. Nay: không định dạng khi bàn phím đang soạn, định dạng lại khi gõ xong, giữ đúng vị trí
      con trỏ theo số chữ số (dùng chung soDinhO_ cho ô Số tiền, ô Cấn trừ, ô cấn trừ bảng lương).
@@ -288,6 +291,7 @@
   .qt-so{font-size:26px;font-weight:800;color:var(--xanh);margin:2px 0 0;white-space:nowrap}
   .qt.am .qt-so{color:var(--do)}
   .qt-nho{font-size:12.5px;color:#444;margin-top:3px}
+  .qt-may{font-size:12px;color:#8a5a00;background:#fff8e1;border-radius:6px;padding:3px 8px;margin-top:5px}
   .qt-nguon{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:6px}
   .qt-nguon span{background:#f4f6f9;border-radius:12px;padding:2px 9px;font-size:12.5px;white-space:nowrap}
   .qt-nguon span.am{background:#ffcdd2;color:#b71c1c;font-weight:700}
@@ -1056,7 +1060,8 @@ function dangNhap() {
 }
 function dangXuat() {
   if (!confirm('Đăng xuất khỏi app kho trên máy này?')) return;
-  xoaMay(); xoaPhien(); OCR = null; xtDong = []; hienLogin('');
+  xoaMay(); qmayXoa(); QUY.dm = {}; QUY.dl = {}; QUY.tuMay = {}; QUY.dmMoi = {}; QUY.daDocMay = {}; QUY.loiMoi = {};   // v1.25: xóa dữ liệu quỹ trên máy
+  xoaPhien(); OCR = null; xtDong = []; hienLogin('');
 }
 /* nhận dữ liệu khởi tạo (từ đăng nhập, từ bản lưu hoặc từ khoiTao) → dựng giao diện */
 function batDau(kq) {
@@ -1086,7 +1091,7 @@ function batDau(kq) {
     document.getElementById('thanhTab').style.display = 'flex';
     document.getElementById('btnThoat').style.display = '';
     capNhatNutQuy();                                                                                // v1.19: nút Quỹ theo quyền máy chủ
-    if (coQuy() && !QUY.dl[QUY.ma_da]) setTimeout(function () { try { taiQuy(true); quyBlTai(true); } catch (e) { } }, 2500);
+    if (coQuy() && !QUY.dmMoi[QUY.ma_da]) setTimeout(function () { try { taiQuy(true); quyBlTai(true); } catch (e) { } }, 1500);   // v1.25: tải ngầm quỹ sớm, bản lưu trên máy hiện ngay
     quyBlHenBatDau();   // v1.20: số tồn / chờ duyệt trên hàng nút
     if (!coQuy() && document.getElementById('manQuy').classList.contains('hien')) moTab('TongQuan');
     var manHienTai = document.querySelector('.man.hien');
@@ -2470,7 +2475,38 @@ function daKiemMau(loai, so) {
 /* ================= v1.19: QUỸ CÔNG TRƯỜNG =================
    Nút 💵 Quỹ trên thanh đầu — chỉ hiện khi máy chủ (khoiTao.quy.duoc) cho phép: ADMIN / CHT / KE_TOAN_DA đúng công trình.
    Máy chủ (Quy.gs) kiểm quyền lại ở mọi hành động. Dữ liệu quỹ CHỈ giữ trong bộ nhớ khi app mở (không lưu xuống máy). */
-var QUY = { ma_da: '', dm: {}, dl: {}, ky: '', loc: 'TAT_CA', form: null, anh: null, dangTai: false };
+var QUY = { ma_da: '', dm: {}, dl: {}, ky: '', loc: 'TAT_CA', form: null, anh: null, dangTai: false,
+  tuMay: {}, dmMoi: {}, daDocMay: {}, loiMoi: {} };   // v1.25: tuMay[m] = giờ lưu của bản đang hiện (lấy từ máy); dmMoi[m] = danh mục đã tải mới trong phiên
+/* v1.25: LƯU DỮ LIỆU QUỸ TRÊN MÁY (IndexedDB — chứa được vài MB, không chiếm chỗ localStorage của màn kho). Lỗi / trình duyệt chặn → app chạy như cũ. */
+var QMAY = { san: null };
+function qmayMo() {
+  if (QMAY.san) return QMAY.san;
+  QMAY.san = new Promise(function (ok) {
+    try {
+      if (!window.indexedDB) return ok(null);
+      var rq = indexedDB.open('l13fc_kho', 1), xong = false, h = setTimeout(function () { if (!xong) { xong = true; ok(null); } }, 3000);
+      rq.onupgradeneeded = function () { try { var db = rq.result; if (!db.objectStoreNames.contains('quy')) db.createObjectStore('quy'); } catch (e) { } };
+      rq.onsuccess = function () { if (xong) return; xong = true; clearTimeout(h); ok(rq.result); };
+      rq.onerror = rq.onblocked = function () { if (xong) return; xong = true; clearTimeout(h); ok(null); };
+    } catch (e) { ok(null); }
+  });
+  return QMAY.san;
+}
+function qmayKhoa(m) { return String((DL && DL.user && DL.user.email) || '').toLowerCase() + '|' + m; }
+function qmayDoc(m) {
+  var k = qmayKhoa(m);
+  return qmayMo().then(function (db) {
+    if (!db) return null;
+    return new Promise(function (ok) { try { var rq = db.transaction('quy', 'readonly').objectStore('quy').get(k); rq.onsuccess = function () { var v = rq.result; ok(v && v.ver === 1 ? v : null); }; rq.onerror = function () { ok(null); }; } catch (e) { ok(null); } });
+  }).catch(function () { return null; });
+}
+function qmayGhi(m) {
+  var dm = QUY.dm[m], dl = QUY.dl[m]; if (!dm || !dl || !DL) return;
+  var k = qmayKhoa(m), v = { ver: 1, luc: Date.now(), dm: dm, dl: dl };
+  qmayMo().then(function (db) { if (!db) return; try { db.transaction('quy', 'readwrite').objectStore('quy').put(v, k); } catch (e) { } }).catch(function () { });
+}
+function qmayXoa() { qmayMo().then(function (db) { if (!db) return; try { db.transaction('quy', 'readwrite').objectStore('quy').clear(); } catch (e) { } }).catch(function () { }); }
+function qmayGio(t) { var d = new Date(t), p = function (n) { return (n < 10 ? '0' : '') + n; }; return p(d.getHours()) + ':' + p(d.getMinutes()) + ' ' + p(d.getDate()) + '/' + p(d.getMonth() + 1); }
 var QUY_CB = { 'C4-GAN': ['Nghi trùng: cùng người, cùng số tiền trong vài ngày', 0], 'C1-ANH': ['Chi chuyển khoản chưa có ảnh biên lai', 0],
   'C1-LON': ['Khoản lớn chưa có chứng từ gốc', 1], 'C7-TM': ['Tiền mặt vượt ngưỡng — đề nghị KTT xác nhận', 0], 'C9-CHUNG': ['Nội dung chung chung — ghi rõ hơn', 0],
   'QUY-AM': ['Nguồn quỹ âm sau khi duyệt — kiểm tra chứng từ thiếu / ghi sai nguồn', 1],
@@ -2523,17 +2559,28 @@ function doiDuAnQuy(m) { QUY.ma_da = m; QUY.ky = ''; QUY.loc = 'TAT_CA'; veQuy()
 function doiKyQuy(k) { QUY.ky = k; taiQuy(true); }
 function taiQuy(ngam) {
   if (!coQuy() || !QUY.ma_da) return;
-  var m = QUY.ma_da, coDm = !!QUY.dm[m];
-  if (QUY.dl[m]) veQuy(); else if (!ngam) document.getElementById('quyTon').querySelector('.qt-nho').textContent = 'Đang tải…';
+  var m = QUY.ma_da;
+  if (!QUY.dl[m] && !QUY.daDocMay[m]) {                         // v1.25: lần đầu trong phiên → lấy bản lưu trên máy (vài chục ms), hiện ngay
+    QUY.daDocMay[m] = true;
+    return qmayDoc(m).then(function (v) {
+      if (v && v.dm && v.dl && !QUY.dl[m]) { QUY.dm[m] = v.dm; QUY.dl[m] = v.dl; QUY.tuMay[m] = v.luc; }
+      taiQuy(ngam);
+    });
+  }
+  var khoiTao = !QUY.dm[m] || !QUY.dmMoi[m], kyGoi = QUY.ky;     // danh mục (đối tượng, tổ đội, quyền) tải mới 1 lần mỗi phiên
+  if (QUY.dl[m]) { if (m === QUY.ma_da) veQuy(); } else if (!ngam) document.getElementById('quyTon').querySelector('.qt-nho').textContent = 'Đang tải…';
   if (QUY.dangTai) return; QUY.dangTai = true;
-  api(coDm ? 'quyDuLieu' : 'quyKhoiTao', { ma_da: m, ky: QUY.ky }, 60).then(function (kq) {
+  if (!navigator.onLine) { QUY.dangTai = false; if (QUY.tuMay[m]) { QUY.loiMoi[m] = 'Không có mạng'; if (m === QUY.ma_da) veQuy(); } return; }
+  api(khoiTao ? 'quyKhoiTao' : 'quyDuLieu', { ma_da: m, ky: kyGoi }, 60).then(function (kq) {
     QUY.dangTai = false;
-    if (!coDm) QUY.dm[m] = { khoan_muc: kq.khoan_muc || [], nguon: kq.nguon || [], doi_tuong: kq.doi_tuong || [], quyen: kq.quyen || {}, to_doi: kq.to_doi || [], km_to_doi: kq.km_to_doi || ['TD', 'TD_UNG'] };
-    QUY.dl[m] = kq; if (!QUY.ky) QUY.ky = kq.ky;
+    if (khoiTao) { QUY.dm[m] = { khoan_muc: kq.khoan_muc || [], nguon: kq.nguon || [], doi_tuong: kq.doi_tuong || [], quyen: kq.quyen || {}, to_doi: kq.to_doi || [], km_to_doi: kq.km_to_doi || ['TD', 'TD_UNG'] }; QUY.dmMoi[m] = true; }
+    QUY.dl[m] = kq; delete QUY.tuMay[m]; delete QUY.loiMoi[m]; if (!QUY.ky) QUY.ky = kq.ky;
+    if (!kyGoi || kyGoi === (kq.ton && kq.ton.ky)) qmayGhi(m);   // chỉ lưu kỳ hiện tại (kỳ app mở mặc định)
     if (m === QUY.ma_da) veQuy();
   }).catch(function (e) {
     QUY.dangTai = false;
-    if (/QUY_KHONG_QUYEN/.test(e.message)) { DL.quy = { duoc: false }; capNhatNutQuy(); moTab('TongQuan'); }
+    if (/QUY_KHONG_QUYEN/.test(e.message)) { DL.quy = { duoc: false }; capNhatNutQuy(); moTab('TongQuan'); return bao(e.message.replace(/^QUY_KHONG_QUYEN:\s*/, '')); }
+    if (QUY.tuMay[m]) { QUY.loiMoi[m] = e.message; if (m === QUY.ma_da) veQuy(); if (ngam) return; }   // đang xem số lưu trên máy: báo nhẹ trên thẻ tồn
     bao(e.message.replace(/^QUY_KHONG_QUYEN:\s*/, ''));
   });
 }
@@ -2542,7 +2589,8 @@ function veQuy() {
   if (!dl || !dm) return;
   veHangQuy();                                                // v1.20
   var t = dl.ton, el = document.getElementById('quyTon'); el.classList.toggle('am', !!t.am);
-  var h = '<div class="qt-dau"><span>TỒN QUỸ ' + esc(quyTenDa(m)).toUpperCase() + ' <small style="font-weight:400">(đến ' + esc(t.luc || dl.luc || '') + ')</small></span><button onclick="taiQuy(true)">↻</button></div>';
+  var h = '<div class="qt-dau"><span>TỒN QUỸ ' + esc(quyTenDa(m)).toUpperCase() + ' <small style="font-weight:400">(đến ' + esc(t.luc || dl.luc || '') + ')</small></span><button onclick="delete QUY.loiMoi[QUY.ma_da];nhac(\'Đang tải số mới…\', 2);taiQuy(false)">↻</button></div>';
+  if (QUY.tuMay[m]) h += '<div class="qt-may">📱 Số lưu trên máy lúc ' + qmayGio(QUY.tuMay[m]) + (QUY.loiMoi[m] ? ' · <b>chưa cập nhật được</b> (' + esc(String(QUY.loiMoi[m]).slice(0, 60)) + ') — bấm ↻ thử lại' : ' · đang cập nhật số mới…') + '</div>';   // v1.25
   h += '<div class="qt-so">' + tienDu(t.tong) + '</div>';
   h += '<div class="qt-nho">Kỳ ' + esc(t.ky) + ': Thu <b style="color:var(--ok)">+' + tienVn(t.thu_ky) + '</b> · Chi <b style="color:var(--do)">−' + tienVn(t.chi_ky) + '</b> (đã duyệt, không tính chuyển nội bộ)</div>';
   h += '<div class="qt-nguon">' + (t.theo_nguon || []).map(function (n) { if (n.truc_tiep) return '<span class="tt" title="Nguồn chi trực tiếp — không tính vào tồn quỹ công trường">' + esc(n.ten) + ' · chi trực tiếp ' + tienVn(n.chi) + '</span>'; return '<span class="' + (n.am ? 'am' : '') + '">' + esc(n.ten) + ' ' + tienDu(n.ton) + '</span>'; }).join('') + '</div>';
