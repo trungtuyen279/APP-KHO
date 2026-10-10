@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.26.0 (GitHub Pages) · 29/09/2026 · đi cùng Code v0.25.0 + Quy v1.4.0 + SoQuy v1.2.1 + OCR v1.9.2
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.27.0 (GitHub Pages) · 10/10/2026 · đi cùng Code v0.26.0 + CongNo v1.0.0 + Quy v1.4.0 + SoQuy v1.3.0 + OCR v1.9.2 · xlsx-lite 1.1.0
+  v1.27.0 — CÔNG NỢ NCC & THẦU PHỤ (anh yêu cầu 10/10): nút "Công nợ" trên hàng nút trên cùng (chỉ tài khoản máy chủ cho phép — khoiTao.cong_no:
+     ADMIN mọi công trình · CHT / KE_TOAN_DA đúng công trình / cột quy_du_an). Màn Công nợ: tổng còn phải trả NCC & thầu phụ + trả trước + tuổi nợ 4 mức,
+     4 ô nhóm (Thầu phụ · NCC vật tư · Dịch vụ & khác · Nội bộ & tổ đội tách riêng), cảnh báo (quá 90 ngày, chưa trả lần nào, trả trước, vượt / gần hết HĐ,
+     thiếu giá trị HĐ, thu tiền vào 331, điều chuyển công trình), phát sinh trong tháng (đã trả cho ai, bao nhiêu), danh sách đối tác lọc + tìm.
+     Chạm 1 đối tác → số dư, tuổi nợ, hợp đồng THAU_PHU / NHA_CUNG_CAP app báo cáo, % HĐ, sổ chi tiết (dòng mới lần nhập này tô xanh), sửa phân loại.
+     "📥 Tải sổ 331 tháng mới" (ADMIN / kế toán): chọn file .xlsx kế toán xuất → app đọc trên máy (xlsx-lite) → máy chủ kiểm tổng, so lần trước → Ghi.
+     Lịch sử nhập + Chốt kỳ (ADMIN). Dữ liệu công nợ không lưu xuống máy.
   v1.26.0 — QUỸ MỞ NGAY (gộp lại bản lưu-trên-máy Phiên 30 sáng, bị bản 1.25.0 sửa ô số tiền ghi đè trên GitHub): dữ liệu Tồn quỹ / Sổ quỹ / danh mục quỹ
      LƯU TRÊN ĐIỆN THOẠI (IndexedDB 'l13fc_kho', khóa email|công trình). Mở Tồn quỹ / Sổ quỹ → hiện NGAY số lần trước (dòng "📱 Số lưu trên máy lúc … ·
      đang cập nhật"), tải mới ngầm rồi tự thay. Mở app 1,5 s tự tải ngầm quỹ. Mất mạng vẫn xem số đã lưu. Đăng xuất → xóa dữ liệu quỹ trên máy.
@@ -323,6 +330,31 @@
   .qct td{padding:5px 4px;border-bottom:1px solid #eee;font-size:13.5px;vertical-align:top} .qct td:first-child{color:#666;width:36%}
   .qf-2{display:flex;gap:8px} .qf-2>div{flex:1;min-width:0}
   .chk{display:flex;align-items:center;gap:8px;margin:0 0 10px;font-size:14px;color:#333} .chk input{width:auto;margin:0}
+  /* v1.27: CÔNG NỢ NCC & THẦU PHỤ */
+  .cn-tong{background:#fff;border:1.5px solid var(--xanh);border-radius:12px;padding:10px 12px;margin-bottom:10px}
+  .cn-tong .so{font-size:24px;font-weight:800;color:var(--xanh);white-space:nowrap}
+  .cn-tong .nho{font-size:12.5px;color:#444;margin-top:3px}
+  .cn-tuoi{display:flex;height:12px;border-radius:6px;overflow:hidden;margin:8px 0 4px;background:#eee}
+  .cn-tuoi i{display:block;height:100%}
+  .cn-tuoi-cg{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:11.5px;color:#444}
+  .cn-tuoi-cg span i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:3px}
+  .cn-nhom{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+  .cn-nhom div{background:#f6f7f9;border-radius:8px;padding:6px 8px;cursor:pointer} .cn-nhom small{display:block;font-size:11px;color:#666} .cn-nhom b{font-size:14px}
+  .cn-nhom div.rieng{background:#f3e5f5}
+  .cn-r{display:flex;gap:8px;padding:9px 4px;border-bottom:1px solid var(--vien);cursor:pointer;align-items:flex-start}
+  .cn-r:active{background:#fff5f5}
+  .cn-r .t{flex:1;min-width:0;font-size:13.5px;line-height:1.35} .cn-r .t small{display:block;color:#666;font-size:12px}
+  .cn-r .tien{flex:none;text-align:right;font-weight:800;font-size:14.5px;white-space:nowrap;color:var(--do)} .cn-r .tien small{display:block;font-weight:400;color:#555;font-size:11.5px}
+  .cn-r .tien.am{color:#6a1b9a} .cn-r .tien.khong{color:#888}
+  .cn-tem{display:inline-block;border-radius:6px;font-size:10.5px;font-weight:700;padding:0 5px;margin-right:4px;background:#eceff1;color:#455a64}
+  .cn-tem.THAU_PHU{background:#e3f2fd;color:#0d47a1}.cn-tem.NCC{background:#e8f5e9;color:#1b5e20}.cn-tem.DICH_VU{background:#fff8e1;color:#8a5a00}
+  .cn-tem.NOI_BO,.cn-tem.TO_DOI{background:#f3e5f5;color:#6a1b9a}.cn-tem.moi{background:var(--ok);color:#fff}.cn-tem.rs{background:#fff3e0;color:#b45309}
+  .cn-hd{display:block;height:5px;border-radius:3px;background:#eee;margin-top:3px;overflow:hidden;max-width:180px}
+  .cn-hd i{display:block;height:100%;background:#0B4F9C} .cn-hd.vuot i{background:var(--do)}
+  .cn-dong{display:flex;gap:6px;padding:6px 2px;border-bottom:1px solid #eee;font-size:12.5px;line-height:1.35}
+  .cn-dong .ng{flex:0 0 70px;color:#555} .cn-dong .nd{flex:1;min-width:0} .cn-dong .st{flex:0 0 96px;text-align:right}
+  .cn-dong .st b.no{color:var(--ok)} .cn-dong .st b.co{color:var(--do)} .cn-dong.moi{background:#f1f8e9}
+  .cn-kiem{font-size:13px;margin:3px 0} .cn-kiem.ok{color:var(--ok)} .cn-kiem.loi{color:var(--do);font-weight:700}
   /* v1.8: hàng nút thống kê + chi phí thuê */
   .tq-hang{display:flex;gap:6px;margin:0 0 10px}
   .tq-nut{flex:1;min-width:0;background:#fff;border:1.5px solid var(--vien);border-radius:10px;padding:8px 4px 7px;text-align:center;font-family:inherit;color:#1c2430;position:relative}
@@ -398,6 +430,7 @@
   <button class="hq-nut" id="hqChi" onclick="moQuyMuc('CHI')"><span class="o"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg></span><b>Chi</b><small id="hqChiChu"></small><span class="dem" id="hqChiDem"></span></button>
   <button class="hq-nut" id="hqChuyen" onclick="moQuyMuc('CHUYEN_NOI_BO')"><span class="o"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></svg></span><b>Chuyển</b><small id="hqChuyenChu"></small><span class="dem" id="hqChuyenDem"></span></button>
   <button class="hq-nut" id="hqSo" onclick="moQuyMuc('SO')"><span class="o"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span><b>Sổ quỹ</b><small id="hqSoChu"></small><span class="dem" id="hqSoDem"></span></button>
+  <button class="hq-nut" id="hqCn" onclick="moCongNo()" style="display:none"><span class="o"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg></span><b>Công nợ</b><small id="hqCnChu"></small></button>
   <button class="hq-nut" id="hqDuyet" onclick="moQuyMuc('DUYET')"><span class="o"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></span><b>Duyệt</b><small id="hqDuyetChu"></small><span class="dem" id="hqDuyetDem"></span></button>
 </div>
 <div class="offline" id="offline">⚠ Không có mạng — chỉ xem được dữ liệu đã tải, chưa gửi được phiếu</div>
@@ -796,6 +829,50 @@
   <div class="nho-mo" style="text-align:center;margin:4px 0 10px">Sắp có: 📊 báo cáo tháng. Mọi thao tác ghi nhật ký theo tài khoản.</div>
 </div>
 
+<!-- ======================= CÔNG NỢ NCC & THẦU PHỤ (v1.27 — CongNo.gs, quyền theo khoiTao.cong_no) ======================= -->
+<div class="man" id="manCongNo">
+  <div class="the" id="cnChonDa" style="display:none;padding:8px 12px">
+    <label>Công trình</label><select id="cnDuAn" onchange="cnDoiDa(this.value)"></select>
+  </div>
+  <div id="cnTong" class="cn-tong"><div class="nho">Đang tải…</div></div>
+  <div style="display:flex;gap:6px;margin-bottom:10px">
+    <button class="nut nho" id="cnNutNhap" style="flex:1;margin:0" onclick="cnMoNhap()">📥 Tải sổ 331 tháng mới</button>
+    <button class="nut phu nho" style="flex:1;margin:0" onclick="cnMoLichSu()">🗂 Lịch sử nhập</button>
+  </div>
+  <div class="the" id="cnCbKhoi" style="display:none">
+    <h3 style="font-size:14px;margin:0 0 4px">⚠ Cảnh báo <span id="cnCbSo"></span></h3>
+    <div class="chips" id="cnCbLoc"></div>
+    <div id="cnCbDs"></div>
+  </div>
+  <div class="the" id="cnKyKhoi" style="display:none">
+    <h3 style="font-size:14px;margin:0 0 6px">💸 Phát sinh trong tháng</h3>
+    <select id="cnKy" onchange="cnTai(false, this.value)"></select>
+    <div id="cnKyTom" class="nho-mo"></div>
+    <div id="cnKyDs"></div>
+  </div>
+  <div class="the">
+    <h3 style="font-size:14px;margin:0 0 6px">📋 Công nợ từng đối tác <span id="cnDsSo" class="nho-mo"></span></h3>
+    <div class="chips" id="cnLoc"></div>
+    <input id="cnTim" placeholder="Tìm tên công ty, mã TP / NCC…" oninput="cnVeDs()" style="margin-top:0">
+    <div id="cnDs"></div>
+  </div>
+  <div class="nho-mo" style="text-align:center;margin:4px 0 10px">Số liệu theo sổ chi tiết TK 331 kế toán công ty. Tuổi nợ ước tính: trả dần hóa đơn cũ nhất trước, tính theo ngày hạch toán. Hợp đồng lấy từ app báo cáo (THAU_PHU).</div>
+</div>
+<!-- v1.27: tải sổ 331 -->
+<div class="mo" id="moCnNhap"><div>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3 style="margin:0">📥 Tải sổ chi tiết TK 331</h3><button class="nut phu nho" style="margin:0;flex:none" onclick="dong('moCnNhap')">✕</button></div>
+  <div class="nho-mo" style="margin:4px 0 8px">Chọn file Excel (.xlsx) kế toán xuất: "Sổ chi tiết tài khoản — Phải trả người bán; Phải trả cho người nhận thầu, thầu phụ", <b>riêng công trình <span id="cnNhapDa"></span></b>, lũy kế từ đầu. App kiểm tổng trước khi ghi.</div>
+  <input type="file" id="cnFile" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onchange="cnDocFile(this)">
+  <div id="cnNhapKq"></div>
+  <div id="cnNhapNut"></div>
+  <button class="nut phu" onclick="dong('moCnNhap')">Đóng</button>
+</div></div>
+<!-- v1.27: chi tiết 1 đối tác / lịch sử nhập -->
+<div class="mo" id="moCnCt"><div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><h3 id="cnCtTieuDe" style="margin:0;font-size:15px"></h3><button class="nut phu nho" style="margin:0;flex:none" onclick="dong('moCnCt')">✕</button></div>
+  <div id="cnCtNoiDung"></div>
+  <button class="nut phu" onclick="dong('moCnCt')">Đóng</button>
+</div></div>
 <!-- v1.21: Thu / Chi — lấy dữ liệu từ biên lai hay nhập tay -->
 <div class="mo" id="moQuyNguon"><div>
   <h3 id="qnTieuDe" style="margin:0 0 4px"></h3>
@@ -989,7 +1066,7 @@ function tai(b, chu) {                                   // v1.2: hiện số gi
 }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 function moTab(t) {
-  ['TongQuan', 'DeNghi', 'LapDeNghi', 'Chup', 'Xuat', 'Ton', 'Duyet', 'Login', 'KiemTra', 'TaiKhoan', 'Quy'].forEach(function (x) {   // v1.19: + Quy
+  ['TongQuan', 'DeNghi', 'LapDeNghi', 'Chup', 'Xuat', 'Ton', 'Duyet', 'Login', 'KiemTra', 'TaiKhoan', 'Quy', 'CongNo'].forEach(function (x) {   // v1.19: + Quy · v1.27: + CongNo
     var m = document.getElementById('man' + x); if (m) m.classList.remove('hien');
     var b = document.getElementById('tab' + x); if (b) b.classList.remove('chon');
   });
@@ -1001,11 +1078,13 @@ function moTab(t) {
   if (t === 'DeNghi') taiDeNghi(false);
   if (t === 'Chup') taiHangDoi(true);                                                              // v1.16: hàng đợi OCR nền
   if (t === 'TaiKhoan') veTaiKhoan();                                                              // v1.16
-  var TEN_MAN = { TongQuan: 'TỔNG QUAN', DeNghi: 'ĐỀ NGHỊ VẬT TƯ', LapDeNghi: 'LẬP ĐỀ NGHỊ VẬT TƯ', Chup: 'CHỤP PHIẾU', Xuat: 'XUẤT KHO', Ton: 'TỒN KHO', Duyet: 'DUYỆT PHIẾU KHO', KiemTra: 'KIỂM TRA PHIẾU', TaiKhoan: 'TÀI KHOẢN', Quy: 'QUỸ CÔNG TRƯỜNG', Login: 'KHO CÔNG TRƯỜNG — LICOGI13FC' };
+  var TEN_MAN = { TongQuan: 'TỔNG QUAN', DeNghi: 'ĐỀ NGHỊ VẬT TƯ', LapDeNghi: 'LẬP ĐỀ NGHỊ VẬT TƯ', Chup: 'CHỤP PHIẾU', Xuat: 'XUẤT KHO', Ton: 'TỒN KHO', Duyet: 'DUYỆT PHIẾU KHO', KiemTra: 'KIỂM TRA PHIẾU', TaiKhoan: 'TÀI KHOẢN', Quy: 'QUỸ CÔNG TRƯỜNG', CongNo: 'CÔNG NỢ NCC & THẦU PHỤ', Login: 'KHO CÔNG TRƯỜNG — LICOGI13FC' };
   document.getElementById('secbar').textContent = TEN_MAN[t] || 'KHO CÔNG TRƯỜNG — LICOGI13FC';   // v1.20: tên màn như app báo cáo
   document.getElementById('hqTon').classList.toggle('chon', t === 'Quy');
+  document.getElementById('hqCn').classList.toggle('chon', t === 'CongNo');
   if (typeof capNhatNutQuy === 'function' && DL) capNhatNutQuy();
   if (t === 'Quy') { taiQuy(false); quyBlVe(); quyBlTai(true); }
+  if (t === 'CongNo') { cnCapNhat(); cnVe(); cnTai(!!CN.dl[CN.ma_da]); }
 }
 function dong(id) { document.getElementById(id).classList.remove('hien'); }
 function bao(msg) { alert(msg); }
@@ -1060,7 +1139,7 @@ function dangNhap() {
 }
 function dangXuat() {
   if (!confirm('Đăng xuất khỏi app kho trên máy này?')) return;
-  xoaMay(); qmayXoa(); QUY.dm = {}; QUY.dl = {}; QUY.tuMay = {}; QUY.dmMoi = {}; QUY.daDocMay = {}; QUY.loiMoi = {};   // v1.25: xóa dữ liệu quỹ trên máy
+  xoaMay(); qmayXoa(); CN.dl = {}; CN.ma_da = ''; QUY.dm = {}; QUY.dl = {}; QUY.tuMay = {}; QUY.dmMoi = {}; QUY.daDocMay = {}; QUY.loiMoi = {};   // v1.25: xóa dữ liệu quỹ trên máy
   xoaPhien(); OCR = null; xtDong = []; hienLogin('');
 }
 /* nhận dữ liệu khởi tạo (từ đăng nhập, từ bản lưu hoặc từ khoiTao) → dựng giao diện */
@@ -1094,6 +1173,7 @@ function batDau(kq) {
     if (coQuy() && !QUY.dmMoi[QUY.ma_da]) setTimeout(function () { try { taiQuy(true); quyBlTai(true); } catch (e) { } }, 1500);   // v1.25: tải ngầm quỹ sớm, bản lưu trên máy hiện ngay
     quyBlHenBatDau();   // v1.20: số tồn / chờ duyệt trên hàng nút
     if (!coQuy() && document.getElementById('manQuy').classList.contains('hien')) moTab('TongQuan');
+    if (!coCN() && document.getElementById('manCongNo').classList.contains('hien')) moTab('TongQuan');   // v1.27
     var manHienTai = document.querySelector('.man.hien');
     if (!manHienTai || manHienTai.id === 'manLogin') moTab('TongQuan');   // v1.4: mở app vào Tổng quan; đang ở tab khác (tải ngầm) thì giữ nguyên
     hdBatDauTheoDoi();                                                     // v1.16: hỏi hàng đợi OCR mỗi 30 s
@@ -2472,6 +2552,210 @@ function daKiemMau(loai, so) {
     dong('moPhieu'); taiChoDuyet();
   }).catch(function (e) { bao(e.message); });
 }
+/* ================= v1.27: CÔNG NỢ NCC & THẦU PHỤ (CongNo.gs) =================
+   Quyền: khoiTao.cong_no {duoc, du_an[], nhap, chot} — máy chủ kiểm lại mọi lần gọi. Dữ liệu công nợ chỉ giữ trong bộ nhớ khi app mở. */
+var CN = { ma_da: '', dl: {}, ky: {}, loc: 'CHINH', cbLoc: '', cbHet: false, kyHet: false, file: null, dangTai: false };
+var CN_MAU_TUOI = ['#66bb6a', '#ffca28', '#fb8c00', '#c62828'], CN_TEN_TUOI = ['≤ 30 ngày', '31–60', '61–90', '> 90 ngày'];
+var CN_LOAI = { TRA_NH: 'Chuyển khoản', TRA_TM: 'Tiền mặt', TRA_VAY: 'Vay trả thẳng', VAT_TU: 'Vật tư', VAT: 'VAT', CHI_PHI: 'Chi phí', CAN_TRU: 'Cấn trừ', DIEU_CHUYEN: 'Điều chuyển CT',
+  THU_TIEN: 'Thu tiền', LUONG: 'Lương', PHAN_BO: 'Phân bổ', LAI_VAY: 'Lãi', GOC_THUE_TC: 'Gốc thuê TC', NO_KHAC: 'Khác', CO_KHAC: 'Khác' };
+function coCN() { return !!(DL && DL.cong_no && DL.cong_no.duoc && (DL.cong_no.du_an || []).length); }
+function cnCapNhat() {
+  var n = document.getElementById('hqCn'); if (n) n.style.display = coCN() ? '' : 'none';
+  if (!coCN()) { CN.dl = {}; CN.ma_da = ''; return; }
+  var ds = DL.cong_no.du_an, sel = document.getElementById('cnDuAn');
+  sel.innerHTML = ds.map(function (m) { return '<option value="' + esc(m) + '">' + esc(quyTenDa(m)) + '</option>'; }).join('');
+  document.getElementById('cnChonDa').style.display = ds.length > 1 ? '' : 'none';
+  if (ds.indexOf(CN.ma_da) < 0) { var tq = document.getElementById('tqDuAn').value; CN.ma_da = ds.indexOf(tq) >= 0 ? tq : ds[0]; }
+  sel.value = CN.ma_da;
+  document.getElementById('cnNutNhap').style.display = DL.cong_no.nhap ? '' : 'none';
+}
+function moCongNo() { if (!coCN()) return; moTab('CongNo'); }
+function cnDoiDa(m) { CN.ma_da = m; CN.cbHet = false; CN.kyHet = false; cnVe(); cnTai(false); }
+function cnTai(ngam, ky) {
+  if (!coCN() || !CN.ma_da) return;
+  var m = CN.ma_da; if (ky !== undefined) { CN.ky[m] = ky; document.getElementById('cnKyDs').innerHTML = '<div class="nho-mo">Đang tải tháng ' + esc(String(ky).slice(5) + '/' + String(ky).slice(0, 4)) + '…</div>'; }
+  if (!ngam && !CN.dl[m]) document.getElementById('cnTong').innerHTML = '<div class="nho">Đang tải công nợ…</div>';
+  api('congNo', { lenh: 'tongHop', ma_da: m, ky: CN.ky[m] || '' }, 90).then(function (kq) {
+    CN.dl[m] = kq; if (m === CN.ma_da) cnVe();
+  }).catch(function (e) {
+    if (/CN_KHONG_QUYEN/.test(e.message)) { DL.cong_no = { duoc: false }; capNhatNutQuy(); moTab('TongQuan'); return bao(e.message.replace(/^CN_KHONG_QUYEN:\s*/, '')); }
+    document.getElementById('cnTong').innerHTML = '<div class="canh-bao">' + esc(e.message) + ' <button class="nut phu nho" onclick="cnTai(false)">Thử lại</button></div>';
+  });
+}
+function cnTien(x) { return tienVn(x) + (Math.abs(Number(x) || 0) >= 1e6 ? '' : ' đ'); }
+function cnVe() {
+  var d = CN.dl[CN.ma_da], el = document.getElementById('cnTong');
+  ['cnCbKhoi', 'cnKyKhoi'].forEach(function (id) { document.getElementById(id).style.display = 'none'; });
+  if (!d) { document.getElementById('cnDs').innerHTML = ''; return; }
+  if (d.chua_co) {
+    el.innerHTML = '<div style="font-weight:700;color:#555">CÔNG NỢ NCC & THẦU PHỤ</div><div class="nho" style="margin-top:6px">Công trình chưa có sổ công nợ. ' +
+      (DL.cong_no.nhap ? 'Bấm <b>📥 Tải sổ 331 tháng mới</b> và chọn file Excel kế toán gửi.' : 'Chờ kế toán / GĐDA tải sổ 331 lên app.') + '</div>';
+    document.getElementById('cnDs').innerHTML = ''; document.getElementById('cnLoc').innerHTML = ''; document.getElementById('cnDsSo').textContent = '';
+    return;
+  }
+  var t = d.tong_chinh, r = d.tong_rieng, tong = t.tuoi.reduce(function (s, x) { return s + x; }, 0) || 1;
+  el.innerHTML = '<div style="display:flex;justify-content:space-between;font-size:12.5px;color:#555;font-weight:700"><span>CÒN PHẢI TRẢ NCC & THẦU PHỤ</span><span>sổ đến ' + esc(d.nhap.den) + '</span></div>' +
+    '<div class="so">' + dongVn(t.du_co) + ' đ</div>' +
+    '<div class="nho">Đã trả trước / tạm ứng chưa có hóa đơn: <b style="color:#6a1b9a">' + dongVn(t.du_no) + ' đ</b> · Thuần: <b>' + dongVn(t.du) + ' đ</b></div>' +
+    '<div class="cn-tuoi">' + t.tuoi.map(function (x, i) { return '<i style="width:' + (x / tong * 100) + '%;background:' + CN_MAU_TUOI[i] + '"></i>'; }).join('') + '</div>' +
+    '<div class="cn-tuoi-cg">' + t.tuoi.map(function (x, i) { return '<span><i style="background:' + CN_MAU_TUOI[i] + '"></i>' + CN_TEN_TUOI[i] + ': <b>' + cnTien(x) + '</b></span>'; }).join('') + '</div>' +
+    '<div class="cn-nhom">' + ['THAU_PHU', 'NCC', 'DICH_VU'].map(function (k) { var n = d.nhom[k]; return '<div onclick="cnChonLoc(\'' + k + '\')"><small>' + esc(n.ten) + ' (' + n.so_dt + ')</small><b>' + cnTien(n.du_co) + '</b>' + (n.du_no ? '<small style="color:#6a1b9a">trả trước ' + cnTien(n.du_no) + '</small>' : '') + '</div>'; }).join('') +
+    '<div class="rieng" onclick="cnChonLoc(\'RIENG\')"><small>Nội bộ & tổ đội (' + r.so_dt + ') — tách riêng</small><b>' + cnTien(r.du_co) + '</b>' + (r.du_no ? '<small style="color:#6a1b9a">trả trước ' + cnTien(r.du_no) + '</small>' : '') + '</div></div>' +
+    '<div class="nho" style="margin-top:6px">Lần nhập ' + esc(d.nhap.luc) + ' · ' + esc(d.nhap.nguoi) + ' · ' + (d.nhap.trang_thai === 'DA_CHOT' ? '<b style="color:var(--ok)">ĐÃ CHỐT</b>' : 'chờ chốt') +
+    (d.nhap.kiem_tra === 'KHOP' ? ' · <span style="color:var(--ok)">✔ khớp tổng</span>' : ' · <b style="color:var(--do)">⚠ ' + esc(d.nhap.kiem_tra) + '</b>') + '</div>';
+  // cảnh báo
+  var cb = d.canh_bao || [];
+  if (cb.length) {
+    var dem = {}; cb.forEach(function (c) { dem[c.ma] = (dem[c.ma] || 0) + 1; });
+    if (CN.cbLoc && !dem[CN.cbLoc]) CN.cbLoc = '';
+    document.getElementById('cnCbKhoi').style.display = '';
+    document.getElementById('cnCbSo').textContent = '(' + cb.length + ')';
+    document.getElementById('cnCbLoc').innerHTML = ['<button class="' + (!CN.cbLoc ? 'chon' : '') + '" onclick="CN.cbLoc=\'\';cnVe()">Tất cả</button>'].concat(Object.keys(dem).map(function (k) {
+      return '<button class="' + (CN.cbLoc === k ? 'chon' : '') + '" onclick="CN.cbLoc=\'' + k + '\';cnVe()" title="' + esc(d.cb_ten[k] || k) + '">' + esc(cnTenCb(k)) + ' (' + dem[k] + ')</button>'; })).join('');
+    var cbL = cb.filter(function (c) { return !CN.cbLoc || c.ma === CN.cbLoc; }), cbN = CN.cbLoc || CN.cbHet ? 80 : 4;   // mặc định 4 dòng cho gọn
+    document.getElementById('cnCbDs').innerHTML = cbL.slice(0, cbN).map(function (c) {
+      return '<div class="cn-r" onclick="cnMoDt(' + esc(JSON.stringify(c.ten_kt)) + ')"><div class="t"><b>' + esc(c.ten_kt) + '</b><small>' + esc(c.chu) + '</small></div></div>'; }).join('') +
+      (cbL.length > cbN ? '<button class="nut phu nho" onclick="CN.cbHet=true;cnVe()">Xem tất cả ' + cbL.length + ' cảnh báo</button>' : '');
+  }
+  // phát sinh tháng
+  document.getElementById('cnKyKhoi').style.display = '';
+  document.getElementById('cnKy').innerHTML = (d.ky_ds || []).map(function (k) { return '<option value="' + k + '"' + (k === d.ky ? ' selected' : '') + '>Tháng ' + k.slice(5) + '/' + k.slice(0, 4) + '</option>'; }).join('');
+  document.getElementById('cnKyTom').innerHTML = 'NCC & thầu phụ: hóa đơn ghi nhận <b>' + dongVn(t.hd_ky) + ' đ</b> · đã trả <b style="color:var(--ok)">' + dongVn(t.tra_ky) + ' đ</b>' +
+    (r.tra_ky ? ' · nội bộ & tổ đội đã trả ' + dongVn(r.tra_ky) + ' đ' : '');
+  var tra = d.tra_ky || [];
+  var kyN = CN.kyHet ? 400 : 5;
+  document.getElementById('cnKyDs').innerHTML = tra.length ? tra.slice(0, kyN).map(function (x) {
+    return '<div class="cn-r" onclick="cnMoDt(' + esc(JSON.stringify(x.ten_kt)) + ')"><div class="t"><span class="cn-tem ' + x.nhom + '">' + esc(cnNhomNgan(x.nhom)) + '</span><b>' + esc(x.ten_kt) + '</b><small>' + esc(x.ngay) + ' · ' + esc(CN_LOAI[x.loai] || x.loai) + ' · ' + esc(x.dien_giai) + '</small></div><div class="tien" style="color:var(--ok)">' + dongVn(x.so_tien) + '</div></div>'; }).join('') +
+    (tra.length > kyN ? '<button class="nut phu nho" onclick="CN.kyHet=true;cnVe()">Xem đủ ' + tra.length + ' lần trả trong tháng</button>' : '') : '<div class="nho-mo">Không có khoản thanh toán nào trong tháng.</div>';
+  cnVeDs();
+}
+function cnTenCb(k) { return { QUA_HAN: 'Quá 90 ngày', CHUA_TRA: 'Chưa trả lần nào', TRA_TRUOC: 'Trả trước', VUOT_HD: 'Vượt HĐ', GAN_HET_HD: 'Gần hết HĐ', TP_CHUA_HD: 'Thiếu giá trị HĐ', THU_TIEN: 'Thu tiền vào 331', DIEU_CHUYEN: 'Điều chuyển CT' }[k] || k; }
+function cnNhomNgan(k) { return { THAU_PHU: 'TP', NCC: 'NCC', DICH_VU: 'DV', NOI_BO: 'Nội bộ', TO_DOI: 'Tổ đội' }[k] || k; }
+function cnChonLoc(k) { CN.loc = k; cnVeDs(); document.getElementById('cnLoc').scrollIntoView({ behavior: 'smooth' }); }
+function cnVeDs() {
+  var d = CN.dl[CN.ma_da]; if (!d || d.chua_co) return;
+  var LOC = [['CHINH', 'NCC & TP'], ['THAU_PHU', 'Thầu phụ'], ['NCC', 'NCC vật tư'], ['DICH_VU', 'Dịch vụ & khác'], ['RIENG', 'Nội bộ & tổ đội'], ['CB', 'Có cảnh báo'], ['TRA_TRUOC', 'Trả trước'], ['RS', 'Chưa phân loại'], ['HET', 'Đã hết nợ']];
+  document.getElementById('cnLoc').innerHTML = LOC.map(function (x) { return '<button class="' + (CN.loc === x[0] ? 'chon' : '') + '" onclick="CN.loc=\'' + x[0] + '\';cnVeDs()">' + x[1] + '</button>'; }).join('');
+  var q = (document.getElementById('cnTim').value || '').trim().toLowerCase(), chinh = ['THAU_PHU', 'NCC', 'DICH_VU'];
+  var ds = d.ds.filter(function (x) {
+    var L = CN.loc, ok = L === 'CHINH' ? chinh.indexOf(x.nhom) >= 0 && x.du !== 0 : L === 'RIENG' ? chinh.indexOf(x.nhom) < 0 : L === 'CB' ? x.canh_bao.length > 0 : L === 'TRA_TRUOC' ? x.du < 0 :
+      L === 'RS' ? x.can_ra_soat === 'CO' : L === 'HET' ? x.du === 0 : x.nhom === L && x.du !== 0;
+    if (!ok) return false;
+    return !q || (x.ten_kt + ' ' + x.ma_tp + ' ' + x.ma_ncc).toLowerCase().indexOf(q) >= 0;
+  });
+  var tc = 0, tn = 0; ds.forEach(function (x) { tc += x.du_co; tn += x.du_no; });
+  document.getElementById('cnDsSo').textContent = '(' + ds.length + ' · còn ' + tienVn(tc) + (tn ? ' · trả trước ' + tienVn(tn) : '') + ')';
+  document.getElementById('cnDs').innerHTML = ds.length ? ds.map(function (x) {
+    var hd = x.ty_le_hd !== null && x.ty_le_hd !== undefined ? '<span class="cn-hd' + (x.ty_le_hd > 100 ? ' vuot' : '') + '"><i style="width:' + Math.min(100, x.ty_le_hd) + '%"></i></span><small>HĐ ' + tienVn(x.gia_tri_hd) + ' · đã ghi nhận ' + String(x.ty_le_hd).replace('.', ',') + ' %</small>' : '';
+    var phu = [x.ma_tp, x.ma_ncc].filter(String).join(' · ');
+    return '<div class="cn-r" onclick="cnMoDt(' + esc(JSON.stringify(x.ten_kt)) + ')"><div class="t"><span class="cn-tem ' + x.nhom + '">' + esc(cnNhomNgan(x.nhom)) + '</span>' +
+      (x.can_ra_soat === 'CO' ? '<span class="cn-tem rs">chưa phân loại</span>' : '') + (x.dong_moi_lan ? '<span class="cn-tem moi">+' + x.dong_moi_lan + ' mới</span>' : '') +
+      '<b>' + esc(x.ten_kt) + '</b><small>' + esc(phu) + (phu ? ' · ' : '') + 'TT cuối ' + esc(x.tt_cuoi || '—') + (x.tra_ky ? ' · tháng này trả ' + tienVn(x.tra_ky) : '') + '</small>' + hd +
+      (x.canh_bao.length ? '<div>' + x.canh_bao.map(function (c) { return '<span class="qcb' + (['QUA_HAN', 'VUOT_HD', 'THU_TIEN', 'CHUA_TRA'].indexOf(c) >= 0 ? ' do' : '') + '">' + esc(cnTenCb(c)) + '</span>'; }).join('') + '</div>' : '') + '</div>' +
+      '<div class="tien' + (x.du < 0 ? ' am' : x.du === 0 ? ' khong' : '') + '">' + (x.du < 0 ? '−' : '') + dongVn(Math.abs(x.du)) + '<small>' + (x.du < 0 ? 'trả trước' : x.du === 0 ? 'hết nợ' : (x.tuoi[3] ? '<span style="color:var(--do)">>90 ng: ' + tienVn(x.tuoi[3]) + '</span>' : 'cũ nhất ' + esc(x.ngay_no_cu))) + '</small></div></div>';
+  }).join('') : '<div class="nho-mo">Không có đối tác nào.</div>';
+}
+function cnMoDt(ten) {
+  document.getElementById('cnCtTieuDe').textContent = ten;
+  document.getElementById('cnCtNoiDung').innerHTML = '<div class="nho-mo">Đang tải sổ chi tiết…</div>';
+  document.getElementById('moCnCt').classList.add('hien');
+  api('congNo', { lenh: 'doiTac', ma_da: CN.ma_da, ten_kt: ten }, 60).then(function (k) {
+    var x = k.dt, h = '<table class="qct">';
+    function dong(a, b) { h += '<tr><td>' + a + '</td><td>' + b + '</td></tr>'; }
+    dong('Nhóm', '<span class="cn-tem ' + x.nhom + '">' + esc(cnNhomNgan(x.nhom)) + '</span>' + esc((DL && CN.dl[CN.ma_da] && CN.dl[CN.ma_da].nhom_ten || {})[x.nhom] || x.nhom) + ' <small class="nho-mo">(' + esc(x.ly_do) + ')</small>');
+    dong('Còn phải trả', '<b style="color:' + (x.du < 0 ? '#6a1b9a' : 'var(--do)') + '">' + (x.du < 0 ? 'Trả trước ' : '') + dongVn(Math.abs(x.du)) + ' đ</b> <small>(sổ đến ' + esc(k.den) + ')</small>');
+    dong('Lũy kế', 'Phát sinh Có ' + dongVn(x.ps_co) + ' · đã trả / cấn trừ ' + dongVn(x.ps_no));
+    if (x.du > 0) dong('Tuổi nợ', x.tuoi.map(function (v, i) { return v ? CN_TEN_TUOI[i] + ': <b>' + dongVn(v) + '</b>' : ''; }).filter(String).join('<br>') + '<br><small>cũ nhất ' + esc(x.ngay_no_cu) + ' (' + x.so_ngay_no_cu + ' ngày)</small>');
+    if (x.du < 0) dong('Trả trước từ', esc(x.tra_truoc_tu));
+    dong('Thanh toán cuối', esc(x.tt_cuoi || 'chưa có'));
+    if (k.hd.length) dong('Hợp đồng (app báo cáo)', k.hd.map(function (c) { return '<b>' + esc(c.ma_tp) + '</b> ' + esc(c.hang_muc) + ' — ' + (c.gia_tri_hd ? dongVn(c.gia_tri_hd) + ' đ' : '<span style="color:var(--do)">chưa ghi giá trị</span>') + (c.ngay_ky ? ' · ký ' + esc(c.ngay_ky) : ''); }).join('<br>'));
+    if (k.ncc.length) dong('Nhà cung cấp (app báo cáo)', k.ncc.map(function (c) { return '<b>' + esc(c.ma_ncc) + '</b> ' + esc(c.vat_tu_chinh); }).join('<br>'));
+    if (x.gia_tri_hd) dong('So hợp đồng', dongVn(x.gia_tri_hd) + ' đ' + (x.hd_nguon === 'TAY' ? ' (nhập tay)' : '') + (x.ty_le_hd !== null ? ' · đã ghi nhận <b>' + String(x.ty_le_hd).replace('.', ',') + ' %</b>' : ''));
+    if (x.canh_bao.length) dong('Cảnh báo', x.canh_bao.map(function (c) { return '<span class="qcb do">' + esc(cnTenCb(c)) + '</span>'; }).join(''));
+    h += '</table>';
+    if (DL.cong_no.nhap) {
+      var g = k.gan || {}, nhom = g.nguon === 'NGUOI' ? g.nhom : x.nhom;
+      h += '<details style="margin:8px 0"><summary style="font-weight:700;color:var(--xanh)">✎ Sửa phân loại / hợp đồng</summary><div style="padding-top:6px">' +
+        '<label>Nhóm</label><select id="cnGNhom">' + ['THAU_PHU', 'NCC', 'DICH_VU', 'NOI_BO', 'TO_DOI'].map(function (n) { return '<option value="' + n + '"' + (n === nhom ? ' selected' : '') + '>' + esc(CN.dl[CN.ma_da].nhom_ten[n]) + '</option>'; }).join('') + '</select>' +
+        '<label>Mã thầu phụ app báo cáo (cách nhau ;)</label><input id="cnGTp" list="cnTpDs" value="' + esc(g.nguon === 'NGUOI' ? g.ma_tp : x.ma_tp) + '"><datalist id="cnTpDs">' + k.tp_ds.map(function (c) { return '<option value="' + esc(c.ma_tp) + '">' + esc(c.ten_tp + ' — ' + c.hang_muc) + '</option>'; }).join('') + '</datalist>' +
+        '<label>Mã NCC app báo cáo (cách nhau ;)</label><input id="cnGNcc" list="cnNccDs" value="' + esc(g.nguon === 'NGUOI' ? g.ma_ncc : x.ma_ncc) + '"><datalist id="cnNccDs">' + k.ncc_ds.map(function (c) { return '<option value="' + esc(c.ma_ncc) + '">' + esc(c.ten_ncc) + '</option>'; }).join('') + '</datalist>' +
+        '<label>Giá trị HĐ nhập tay (để trống = lấy THAU_PHU)</label><input id="cnGHd" inputmode="numeric" value="' + (g.gia_tri_hd_tay ? dongVn(g.gia_tri_hd_tay) : '') + '">' +
+        '<label>Ghi chú</label><input id="cnGGc" value="' + esc(g.ghi_chu || '') + '">' +
+        '<button class="nut nho" onclick="cnLuuGan(' + esc(JSON.stringify(ten)) + ')">💾 Lưu</button>' + (g.nguon === 'NGUOI' ? '<button class="nut phu nho" onclick="cnLuuGan(' + esc(JSON.stringify(ten)) + ', true)">↺ Trả về app tự đoán</button>' : '') + '</div></details>';
+    }
+    h += '<h4 style="margin:10px 0 4px;font-size:13.5px">Sổ chi tiết (' + k.dong.length + ' dòng, dư lũy kế bên phải)</h4>' + k.dong.slice().reverse().map(function (r) {
+      return '<div class="cn-dong' + (r.moi ? ' moi' : '') + '"><div class="ng">' + esc(r.ngay) + '<br><small>' + esc(r.so_ct) + '</small></div><div class="nd">' + esc(r.dien_giai) + '<br><small class="nho-mo">' + esc(CN_LOAI[r.loai] || r.loai) + ' · TK ' + esc(r.tk) + (r.moi ? ' · <b style="color:var(--ok)">mới lần nhập này</b>' : '') + '</small></div>' +
+        '<div class="st">' + (r.no ? '<b class="no">−' + dongVn(r.no) + '</b>' : '') + (r.co ? '<b class="co">+' + dongVn(r.co) + '</b>' : '') + '<br><small>' + dongVn(r.du) + '</small></div></div>'; }).join('');
+    document.getElementById('cnCtNoiDung').innerHTML = h;
+  }).catch(function (e) { document.getElementById('cnCtNoiDung').innerHTML = '<div class="canh-bao">' + esc(e.message) + '</div>'; });
+}
+function cnLuuGan(ten, traVe) {
+  var d = traVe ? { lenh: 'ganDoiTac', ma_da: CN.ma_da, ten_kt: ten, tra_ve_tu_dong: true } : { lenh: 'ganDoiTac', ma_da: CN.ma_da, ten_kt: ten, nhom: document.getElementById('cnGNhom').value,
+    ma_tp: document.getElementById('cnGTp').value, ma_ncc: document.getElementById('cnGNcc').value, gia_tri_hd_tay: document.getElementById('cnGHd').value, ghi_chu: document.getElementById('cnGGc').value };
+  tai(true, 'Đang lưu…');
+  api('congNoGhi', d, 60).then(function () { tai(false); nhac('Đã lưu phân loại ' + ten); cnTai(true); cnMoDt(ten); }).catch(function (e) { tai(false); bao(e.message); });
+}
+/* tải sổ: đọc .xlsx trên máy (xlsx-lite) → chọn sheet có "Khách hàng" → máy chủ xem trước → ghi */
+function cnMoNhap() {
+  if (!coCN() || !DL.cong_no.nhap) return;
+  CN.file = null; document.getElementById('cnFile').value = ''; document.getElementById('cnNhapKq').innerHTML = ''; document.getElementById('cnNhapNut').innerHTML = '';
+  document.getElementById('cnNhapDa').textContent = quyTenDa(CN.ma_da);
+  document.getElementById('moCnNhap').classList.add('hien');
+}
+function cnDocFile(inp) {
+  var f = inp.files && inp.files[0]; if (!f) return;
+  if (typeof XLSX_LITE === 'undefined' || !XLSX_LITE.xlsxDocBang) return bao('App chưa có bản xlsx-lite mới — bấm Tài khoản → Tải lại app');
+  var kq = document.getElementById('cnNhapKq'); kq.innerHTML = '<div class="nho-mo">Đang đọc file ' + esc(f.name) + '…</div>'; document.getElementById('cnNhapNut').innerHTML = '';
+  f.arrayBuffer().then(function (buf) { return XLSX_LITE.xlsxDocBang(buf, 14); }).then(function (ds) {
+    var sh = ds.filter(function (s) { return s.rows.slice(0, 40).some(function (r) { return r.some(function (v) { return /^\s*kh[aá]ch h[aà]ng\s*$/i.test(String(v)); }); }); })[0];
+    if (!sh) throw new Error('Không thấy sheet sổ chi tiết (cột "Khách hàng") trong file. Các sheet: ' + ds.map(function (s) { return s.ten; }).join(', '));
+    CN.file = { ten: f.name, sheet: sh.ten, rows: sh.rows };
+    kq.innerHTML = '<div class="nho-mo">Sheet "' + esc(sh.ten) + '" · ' + sh.rows.length + ' dòng — máy chủ đang kiểm…</div>';
+    return api('congNoGhi', { lenh: 'nhapSo', ma_da: CN.ma_da, ten_file: f.name, rows: sh.rows, xem_truoc: true }, 120);
+  }).then(function (r) { cnVeXemTruoc(r.tom); }).catch(function (e) { kq.innerHTML = '<div class="canh-bao">' + esc(e.message) + '</div>'; });
+}
+function cnVeXemTruoc(t) {
+  var h = '<div class="the" style="margin-top:6px"><b>Sổ ' + esc(t.tai_khoan) + '</b><div class="nho-mo">Từ ' + esc(t.tu) + ' đến <b>' + esc(t.den) + '</b> · ' + esc((t.san_pham || []).join(', ')) + '</div>' +
+    t.kiem.map(function (k) { return '<div class="cn-kiem ' + (k.ok ? 'ok' : 'loi') + '">' + (k.ok ? '✔ ' : '✘ ') + esc(k.chu) + '</div>'; }).join('') +
+    '<table class="qct" style="margin-top:6px"><tr><td>Đối tác / dòng</td><td>' + t.so_doi_tac + ' / ' + t.so_dong + '</td></tr>' +
+    '<tr><td>Dư Có cuối kỳ (còn phải trả)</td><td><b>' + dongVn(t.du_co) + '</b></td></tr><tr><td>Dư Nợ cuối kỳ (trả trước)</td><td>' + dongVn(t.du_no) + '</td></tr>' +
+    '<tr><td>— NCC & thầu phụ</td><td>còn ' + dongVn(t.tong_chinh.du_co) + ' · trả trước ' + dongVn(t.tong_chinh.du_no) + '</td></tr>' +
+    '<tr><td>— Nội bộ & tổ đội</td><td>còn ' + dongVn(t.tong_rieng.du_co) + ' · trả trước ' + dongVn(t.tong_rieng.du_no) + '</td></tr>';
+  if (t.lan_truoc) h += '<tr><td>So lần nhập trước (đến ' + esc(t.lan_truoc.den) + ')</td><td><b>' + t.dong_moi + '</b> dòng mới · <b' + (t.dong_mat ? ' style="color:var(--do)"' : '') + '>' + t.dong_mat + '</b> dòng mất / bị sửa · <b' + (t.ghi_lui ? ' style="color:#b45309"' : '') + '>' + t.ghi_lui + '</b> dòng ghi lùi ngày</td></tr>';
+  h += '<tr><td>Đối tác mới / chưa phân loại</td><td>' + t.dt_moi + ' / ' + t.chua_phan_loai + '</td></tr></table>';
+  if (t.cu_hon_lan_truoc) h += '<div class="canh-bao">⚠ Sổ này CŨ hơn lần nhập trước — kiểm lại có chọn nhầm file không.</div>';
+  function mau(ds, tieuDe) { return ds.length ? '<details><summary class="nho-mo">' + tieuDe + ' (' + ds.length + ')</summary>' + ds.map(function (x) { return '<div class="cn-dong"><div class="ng">' + esc(x.ngay) + '</div><div class="nd"><b>' + esc(x.ten_kt) + '</b><br>' + esc(x.dien_giai) + '</div><div class="st">' + (x.no ? '−' + dongVn(x.no) : '+' + dongVn(x.co)) + '</div></div>'; }).join('') + '</details>' : ''; }
+  h += mau(t.mat_mau || [], 'Dòng có ở lần trước nhưng không còn (kế toán xóa / sửa)') + mau(t.lui_mau || [], 'Dòng mới nhưng ngày trước lần chốt trước (ghi lùi)') + '</div>';
+  document.getElementById('cnNhapKq').innerHTML = h;
+  var can = !t.kiem_ok || t.cu_hon_lan_truoc;
+  document.getElementById('cnNhapNut').innerHTML = '<button class="nut ' + (can ? 'do' : 'ok') + '" onclick="cnGhiSo(' + (can ? 'true' : 'false') + ')">' + (can ? '⚠ Vẫn ghi (sổ có điểm lệch)' : '✔ Ghi sổ vào app') + '</button>';
+}
+function cnGhiSo(boQua) {
+  if (!CN.file) return;
+  if (boQua && !confirm('Sổ có điểm lệch / cũ hơn lần trước. Vẫn ghi và đánh dấu LỆCH trong lịch sử?')) return;
+  tai(true, 'Đang ghi sổ công nợ…');
+  api('congNoGhi', { lenh: 'nhapSo', ma_da: CN.ma_da, ten_file: CN.file.ten, rows: CN.file.rows, bo_qua_lech: !!boQua }, 180).then(function (r) {
+    tai(false); dong('moCnNhap'); CN.file = null; delete CN.ky[CN.ma_da]; nhac('Đã ghi sổ công nợ ' + r.tom.den + ' — ' + r.tom.so_doi_tac + ' đối tác', 6); cnTai(false);
+  }).catch(function (e) { tai(false); bao(e.message); });
+}
+function cnMoLichSu() {
+  document.getElementById('cnCtTieuDe').textContent = '🗂 Lịch sử nhập sổ — ' + quyTenDa(CN.ma_da);
+  document.getElementById('cnCtNoiDung').innerHTML = '<div class="nho-mo">Đang tải…</div>';
+  document.getElementById('moCnCt').classList.add('hien');
+  api('congNo', { lenh: 'lichSu', ma_da: CN.ma_da }, 60).then(function (k) {
+    document.getElementById('cnCtNoiDung').innerHTML = k.nhap.length ? k.nhap.map(function (n, i) {
+      return '<div class="ds-item"><b>Sổ đến ' + esc(n.den) + '</b> <span class="tem ' + (n.trang_thai === 'DA_CHOT' ? 'DA_DUYET' : 'CHO_DUYET') + '">' + (n.trang_thai === 'DA_CHOT' ? 'Đã chốt' : 'Chờ chốt') + '</span>' +
+        '<div class="nho-mo">' + esc(n.ten_file) + ' · nhập ' + esc(n.luc) + ' · ' + esc(n.nguoi) + '</div>' +
+        '<div style="font-size:13px">' + n.so_doi_tac + ' đối tác · ' + n.so_dong + ' dòng · dư Có ' + dongVn(n.du_co) + ' · dư Nợ ' + dongVn(n.du_no) + '</div>' +
+        '<div style="font-size:12.5px">' + (n.kiem_tra === 'KHOP' ? '<span style="color:var(--ok)">✔ khớp tổng</span>' : '<b style="color:var(--do)">' + esc(n.kiem_tra) + '</b>') + ' · mới ' + n.dong_moi + ' · mất ' + n.dong_mat + ' · ghi lùi ' + n.ghi_lui + '</div>' +
+        (n.trang_thai === 'DA_CHOT' ? '<div class="nho-mo">Chốt bởi ' + esc(n.nguoi_chot) + ' lúc ' + esc(n.luc_chot) + '</div>' : (DL.cong_no.chot && i === 0 ? '<button class="nut ok nho" onclick="cnChot(\'' + esc(n.nhap_id) + '\')">🔒 Chốt kỳ này</button>' : '')) + '</div>';
+    }).join('') : '<div class="nho-mo">Chưa có lần nhập nào.</div>';
+  }).catch(function (e) { document.getElementById('cnCtNoiDung').innerHTML = '<div class="canh-bao">' + esc(e.message) + '</div>'; });
+}
+function cnChot(id) {
+  if (!confirm('Chốt số công nợ lần nhập này? (đánh dấu đã rà soát — dùng làm số báo cáo tháng)')) return;
+  api('congNoGhi', { lenh: 'chotKy', ma_da: CN.ma_da, nhap_id: id }, 60).then(function () { nhac('Đã chốt'); cnMoLichSu(); cnTai(true); }).catch(function (e) { bao(e.message); });
+}
 /* ================= v1.19: QUỸ CÔNG TRƯỜNG =================
    Nút 💵 Quỹ trên thanh đầu — chỉ hiện khi máy chủ (khoiTao.quy.duoc) cho phép: ADMIN / CHT / KE_TOAN_DA đúng công trình.
    Máy chủ (Quy.gs) kiểm quyền lại ở mọi hành động. Dữ liệu quỹ CHỈ giữ trong bộ nhớ khi app mở (không lưu xuống máy). */
@@ -2523,8 +2807,10 @@ function quyTenDa(m) { var d = ((DL && DL.du_an) || []).filter(function (x) { re
 function capNhatNutQuy() {
   var b = document.getElementById('hangQuy'); if (!b) return;
   var dangLogin = document.getElementById('manLogin').classList.contains('hien');
-  b.classList.toggle('hien', coQuy() && !dangLogin);
+  b.classList.toggle('hien', (coQuy() || coCN()) && !dangLogin);   // v1.27: hàng hiện khi có Quỹ HOẶC Công nợ
   document.getElementById('hqDuyet').style.display = coQuy() && DL.quy.duyet ? '' : 'none';
+  ['hqTon', 'hqThu', 'hqChi', 'hqChuyen', 'hqSo'].forEach(function (id) { document.getElementById(id).style.display = coQuy() ? '' : 'none'; });
+  cnCapNhat();
   if (!coQuy()) { QUY.dm = {}; QUY.dl = {}; QUY.ma_da = ''; return; }
   var ds = DL.quy.du_an, sel = document.getElementById('quyDuAn');
   sel.innerHTML = ds.map(function (m) { return '<option value="' + esc(m) + '">' + esc(quyTenDa(m)) + '</option>'; }).join('');
