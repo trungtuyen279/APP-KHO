@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.28.0 (GitHub Pages) · 10/10/2026 · đi cùng Code v0.26.0 + CongNo v1.0.0 + Quy v1.4.0 + SoQuy v1.3.0 + OCR v1.9.2 · xlsx-lite 1.1.0
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.28.1 (GitHub Pages) · 10/10/2026 · đi cùng Code v0.26.0 + CongNo v1.0.0 + Quy v1.4.0 + SoQuy v1.3.0 + OCR v1.9.2 · xlsx-lite 1.1.0
+  v1.28.1 — MỞ TRÊN MÁY TÍNH GỌN NHƯ ĐIỆN THOẠI (anh yêu cầu 10/10, giống app báo cáo): màn rộng ≥ 600 px → app nằm giữa trong khung 432 px,
+     nền ngoài xám, thanh nút dưới đáy / hộp thoại / màn chờ cùng khung; xem ảnh phiếu vẫn toàn màn hình. Điện thoại không đổi. Không đổi máy chủ.
   v1.28.0 — MÀN QUỸ CHIA THEO NÚT (anh yêu cầu 10/10): bấm nút nào chỉ hiện đúng phần của nút đó, không dồn hết lên một màn.
      Tồn quỹ = thẻ tồn + tạm ứng chưa hoàn · Thu/Chi = 2 nút Thu / Chi ngay trên màn + tổng thu chi kỳ + biên lai AI đọc ·
      Chuyển = mở phiếu chuyển + danh sách phiếu chuyển · Sổ quỹ = sổ kế toán + sổ quỹ đầy đủ · Duyệt = phiếu chờ duyệt (không có thì báo rõ).
@@ -431,6 +433,14 @@
   .vl-d.VUOT .thanh i{background:#c00000} .vl-d.CHU_Y .thanh i{background:#e08e0b} .vl-d.OK .thanh i{background:#2e7d32} .vl-d.CHUA_NHAP .thanh i{background:#ccc}
   .vl-d small{color:#555;font-size:11.5px;display:block;line-height:1.5}
   .vl-d .sua{margin-top:6px;padding:5px 10px;font-size:12px;border:1px solid var(--do);border-radius:8px;background:#fff;color:var(--do);font-weight:600}
+  /* v1.28.1: trình duyệt máy tính — khung điện thoại 432 px ở giữa, như app báo cáo */
+  @media (min-width:600px){
+    html{background:#E2E5E9}
+    body{max-width:432px;margin:0 auto;min-height:100vh;box-shadow:0 0 0 1px #d0d4d9,0 4px 24px rgba(0,0,0,.08)}
+    .tab,.mo,.tai{left:calc(50% - 216px);right:calc(50% - 216px)}
+    .nhac{max-width:400px}
+    #moAnh{left:0;right:0}
+  }
 </style>
 </head>
 <body>
