@@ -1,5 +1,8 @@
 /* =====================================================================
-   xlsx-lite.js — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.0.1 · 04/09/2026 (tên người ký dồn đáy ô)
+   xlsx-lite.js — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.1.0 · 10/10/2026
+   v1.1.0: + xlsxDocBang(arrayBuffer) → Promise<[{ten, rows:[[ô…]…]}]> — đọc MỌI sheet thành bảng ô (theo thứ tự trong workbook)
+           cho module Công nợ (sổ chi tiết TK 331 kế toán xuất). Ô chữ → chuỗi, ô số → số (ngày dạng số giữ serial, máy chủ tự đổi).
+   v1.0.1: tên người ký dồn đáy ô
    Ghi / đọc file Excel (.xlsx) cho PHIẾU ĐỀ NGHỊ VẬT TƯ (mẫu BM 16.04) mà KHÔNG cần thư viện ngoài
    (CDN bị chặn ở nhiều mạng công trường; app phải chạy được offline).
    - xlsxDeNghi(phieu, anhHeader)  → Blob .xlsx đúng bố cục mẫu công ty (header ảnh, bảng 10 cột, 3 ô ký) — mở bằng Excel sửa được.
@@ -282,6 +285,37 @@
     });
   }
 
-  var api = { xlsxDeNghi: xlsxDeNghi, xlsxDocDeNghi: xlsxDocDeNghi, _zipStore: zipStore, _unzip: unzip, _boDau: boDau };
+  /** v1.1.0: đọc mọi sheet → [{ten, rows}] (rows: mảng 2 chiều, ô trống = ''), giới hạn maxCot cột (mặc định 30) */
+  function xlsxDocBang(buf, maxCot) {
+    maxCot = maxCot || 30;
+    return unzip(buf).then(function (z) {
+      var wbX = z['xl/workbook.xml'] ? dec.decode(z['xl/workbook.xml']) : '';
+      if (!wbX) throw new Error('File không phải Excel .xlsx (thiếu xl/workbook.xml). Nếu là .xls cũ: mở bằng Excel → Lưu dưới dạng → Excel Workbook (.xlsx)');
+      var ss = docSharedStrings(z['xl/sharedStrings.xml'] ? dec.decode(z['xl/sharedStrings.xml']) : '');
+      var rels = {}, relX = z['xl/_rels/workbook.xml.rels'] ? dec.decode(z['xl/_rels/workbook.xml.rels']) : '', m, re = /<Relationship\b([^>]*)\/?>/g;
+      while ((m = re.exec(relX))) { var id = (m[1].match(/\bId="([^"]+)"/) || [])[1], tg = (m[1].match(/\bTarget="([^"]+)"/) || [])[1]; if (id && tg) rels[id] = tg.replace(/^\/?(xl\/)?/, 'xl/'); }
+      var ds = [], reS = /<sheet\b([^>]*)\/?>/g;
+      while ((m = reS.exec(wbX))) {
+        var ten = giaiXml((m[1].match(/\bname="([^"]*)"/) || [])[1] || ''), rid = (m[1].match(/\br:id="([^"]+)"/) || m[1].match(/\bid="([^"]+)"/) || [])[1];
+        var duong = rels[rid]; if (duong && z[duong]) ds.push({ ten: ten, duong: duong });
+      }
+      if (!ds.length) Object.keys(z).filter(function (k) { return /^xl\/worksheets\/sheet\d+\.xml$/.test(k); }).sort().forEach(function (k, i) { ds.push({ ten: 'Sheet' + (i + 1), duong: k }); });
+      if (!ds.length) throw new Error('File không có sheet nào');
+      return ds.map(function (d) {
+        var cells = docSheetXml(dec.decode(z[d.duong]), ss), maxR = 0;
+        Object.keys(cells).forEach(function (k) { var mm = k.match(/^_r(\d+)$/); if (mm && +mm[1] > maxR) maxR = +mm[1]; });
+        var rows = [];
+        for (var r = 1; r <= maxR; r++) {
+          var rc = cells['_r' + r] || {}, row = [], w = 0;
+          Object.keys(rc).forEach(function (c) { var n = colSo(c); if (n <= maxCot && n > w && rc[c] !== '' && rc[c] != null) w = n; });
+          for (var c = 1; c <= w; c++) { var v = rc[colChu(c)]; row.push(v == null ? '' : v); }
+          rows.push(row);
+        }
+        return { ten: d.ten, rows: rows };
+      });
+    });
+  }
+
+  var api = { xlsxDeNghi: xlsxDeNghi, xlsxDocDeNghi: xlsxDocDeNghi, xlsxDocBang: xlsxDocBang, _zipStore: zipStore, _unzip: unzip, _boDau: boDau };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.XLSX_LITE = api;
 })(typeof self !== 'undefined' ? self : this);
