@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.27.0 (GitHub Pages) · 10/10/2026 · đi cùng Code v0.26.0 + CongNo v1.0.0 + Quy v1.4.0 + SoQuy v1.3.0 + OCR v1.9.2 · xlsx-lite 1.1.0
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.27.1 (GitHub Pages) · 10/10/2026 · đi cùng Code v0.26.0 + CongNo v1.0.0 + Quy v1.4.0 + SoQuy v1.3.0 + OCR v1.9.2 · xlsx-lite 1.1.0
+  v1.27.1 — HÀNG NÚT TRÊN CÒN 6 NÚT (anh yêu cầu 10/10): gộp Thu + Chi thành 1 nút "Thu/Chi" (số đỏ = tổng biên lai AI đã đọc chờ kiểm tra);
+     bấm → hộp chọn 2 nút ＋ Thu / － Chi (mỗi nút có số biên lai chờ của loại đó) → đi tiếp như cũ (chụp / chọn ảnh / nhập tay). Không đổi máy chủ.
   v1.27.0 — CÔNG NỢ NCC & THẦU PHỤ (anh yêu cầu 10/10): nút "Công nợ" trên hàng nút trên cùng (chỉ tài khoản máy chủ cho phép — khoiTao.cong_no:
      ADMIN mọi công trình · CHT / KE_TOAN_DA đúng công trình / cột quy_du_an). Màn Công nợ: tổng còn phải trả NCC & thầu phụ + trả trước + tuổi nợ 4 mức,
      4 ô nhóm (Thầu phụ · NCC vật tư · Dịch vụ & khác · Nội bộ & tổ đội tách riêng), cảnh báo (quá 90 ngày, chưa trả lần nào, trả trước, vượt / gần hết HĐ,
@@ -355,6 +357,15 @@
   .cn-dong .ng{flex:0 0 70px;color:#555} .cn-dong .nd{flex:1;min-width:0} .cn-dong .st{flex:0 0 96px;text-align:right}
   .cn-dong .st b.no{color:var(--ok)} .cn-dong .st b.co{color:var(--do)} .cn-dong.moi{background:#f1f8e9}
   .cn-kiem{font-size:13px;margin:3px 0} .cn-kiem.ok{color:var(--ok)} .cn-kiem.loi{color:var(--do);font-weight:700}
+  /* v1.27.1: hộp chọn Thu / Chi */
+  .qtc-hang{display:flex;gap:10px;margin-top:10px}
+  .qtc-nut{flex:1;min-width:0;position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:16px 8px;border-radius:12px;border:1.5px solid var(--vien);background:#fff;font-family:inherit;color:#1c2430;cursor:pointer}
+  .qtc-nut .ky{font-size:30px;font-weight:800;line-height:1}
+  .qtc-nut b{font-size:16px} .qtc-nut small{font-size:12px;color:#666;text-align:center}
+  .qtc-nut.thu{border-color:var(--ok)} .qtc-nut.thu .ky{color:var(--ok)}
+  .qtc-nut.chi{border-color:var(--do)} .qtc-nut.chi .ky{color:var(--do)}
+  .qtc-nut:active{background:#f6f7f9}
+  .qtc-nut .dem{position:absolute;top:-7px;right:-5px;background:var(--do);color:#fff;border-radius:11px;padding:1px 8px;font-weight:700;font-size:12px;display:none}
   /* v1.8: hàng nút thống kê + chi phí thuê */
   .tq-hang{display:flex;gap:6px;margin:0 0 10px}
   .tq-nut{flex:1;min-width:0;background:#fff;border:1.5px solid var(--vien);border-radius:10px;padding:8px 4px 7px;text-align:center;font-family:inherit;color:#1c2430;position:relative}
@@ -426,8 +437,7 @@
 <!-- v1.20: HÀNG NÚT QUỸ — chỉ ADMIN / CHT / KE_TOAN_DA (máy chủ quyết qua khoiTao.quy) -->
 <div class="hang-quy" id="hangQuy">
   <button class="hq-nut" id="hqTon" onclick="moQuyMuc('TON')"><span class="o"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg></span><b>Tồn quỹ</b><small id="hqTonChu"></small><span class="dem" id="hqTonDem"></span></button>
-  <button class="hq-nut" id="hqThu" onclick="moQuyMuc('THU')"><span class="o"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg></span><b>Thu</b><small id="hqThuChu"></small><span class="dem" id="hqThuDem"></span></button>
-  <button class="hq-nut" id="hqChi" onclick="moQuyMuc('CHI')"><span class="o"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg></span><b>Chi</b><small id="hqChiChu"></small><span class="dem" id="hqChiDem"></span></button>
+  <button class="hq-nut" id="hqThuChi" onclick="moQuyThuChi()"><span class="o"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v8"/><path d="M3 7h8"/><path d="M14 17h7"/><path d="M19 4 5 20"/></svg></span><b>Thu/Chi</b><small id="hqThuChiChu"></small><span class="dem" id="hqThuChiDem"></span></button>
   <button class="hq-nut" id="hqChuyen" onclick="moQuyMuc('CHUYEN_NOI_BO')"><span class="o"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></svg></span><b>Chuyển</b><small id="hqChuyenChu"></small><span class="dem" id="hqChuyenDem"></span></button>
   <button class="hq-nut" id="hqSo" onclick="moQuyMuc('SO')"><span class="o"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span><b>Sổ quỹ</b><small id="hqSoChu"></small><span class="dem" id="hqSoDem"></span></button>
   <button class="hq-nut" id="hqCn" onclick="moCongNo()" style="display:none"><span class="o"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg></span><b>Công nợ</b><small id="hqCnChu"></small></button>
@@ -872,6 +882,16 @@
   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><h3 id="cnCtTieuDe" style="margin:0;font-size:15px"></h3><button class="nut phu nho" style="margin:0;flex:none" onclick="dong('moCnCt')">✕</button></div>
   <div id="cnCtNoiDung"></div>
   <button class="nut phu" onclick="dong('moCnCt')">Đóng</button>
+</div></div>
+<!-- v1.27.1: nút Thu/Chi gộp — chọn Thu hay Chi -->
+<div class="mo" id="moQuyThuChi"><div>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3 id="qtcTieuDe" style="margin:0">Thu / Chi</h3><button class="nut phu nho" style="margin:0;flex:none" onclick="dong('moQuyThuChi')">✕</button></div>
+  <div class="qtc-hang">
+    <button class="qtc-nut thu" onclick="chonQuyThuChi('THU')"><span class="ky">＋</span><b>Thu</b><small>Phiếu thu tiền vào quỹ</small><span class="dem" id="qtcThuDem"></span></button>
+    <button class="qtc-nut chi" onclick="chonQuyThuChi('CHI')"><span class="ky">－</span><b>Chi</b><small>Phiếu chi tiền ra</small><span class="dem" id="qtcChiDem"></span></button>
+  </div>
+  <div class="nho-mo" id="qtcNho" style="margin-top:8px"></div>
+  <button class="nut phu" onclick="dong('moQuyThuChi')">Đóng</button>
 </div></div>
 <!-- v1.21: Thu / Chi — lấy dữ liệu từ biên lai hay nhập tay -->
 <div class="mo" id="moQuyNguon"><div>
@@ -2809,7 +2829,7 @@ function capNhatNutQuy() {
   var dangLogin = document.getElementById('manLogin').classList.contains('hien');
   b.classList.toggle('hien', (coQuy() || coCN()) && !dangLogin);   // v1.27: hàng hiện khi có Quỹ HOẶC Công nợ
   document.getElementById('hqDuyet').style.display = coQuy() && DL.quy.duyet ? '' : 'none';
-  ['hqTon', 'hqThu', 'hqChi', 'hqChuyen', 'hqSo'].forEach(function (id) { document.getElementById(id).style.display = coQuy() ? '' : 'none'; });
+  ['hqTon', 'hqThuChi', 'hqChuyen', 'hqSo'].forEach(function (id) { document.getElementById(id).style.display = coQuy() ? '' : 'none'; });
   cnCapNhat();
   if (!coQuy()) { QUY.dm = {}; QUY.dl = {}; QUY.ma_da = ''; return; }
   var ds = DL.quy.du_an, sel = document.getElementById('quyDuAn');
@@ -3328,13 +3348,24 @@ function quyBlHenBatDau() {
   if (QBL.hen) return;
   QBL.hen = setInterval(function () { if (coQuy() && quyBlConViec() && document.visibilityState === 'visible') quyBlTai(true); }, 20000);
 }
-function quyBlVeSo() {
-  var b = QBL.ds[QUY.ma_da], ds = b ? b.ds : [];
+function quyBlVeSo() {                                    // v1.27.1: số biên lai đã đọc chờ kiểm tra — tổng trên nút Thu/Chi, riêng từng loại trong hộp chọn
+  var b = QBL.ds[QUY.ma_da], ds = b ? b.ds : [], tong = 0;
   ['THU', 'CHI'].forEach(function (l) {
-    var n = ds.filter(function (x) { return x.loai === l && x.trang_thai === 'XONG'; }).length, el = document.getElementById(l === 'THU' ? 'hqThuDem' : 'hqChiDem');
-    if (el) { el.textContent = n; el.style.display = n ? 'block' : 'none'; }
+    var n = ds.filter(function (x) { return x.loai === l && x.trang_thai === 'XONG'; }).length, el = document.getElementById(l === 'THU' ? 'qtcThuDem' : 'qtcChiDem');
+    tong += n; if (el) { el.textContent = n; el.style.display = n ? 'block' : 'none'; }
   });
+  var t = document.getElementById('hqThuChiDem'); if (t) { t.textContent = tong; t.style.display = tong ? 'block' : 'none'; }
 }
+/* v1.27.1: nút Thu/Chi gộp → hộp chọn 2 nút; chọn xong đi tiếp như nút Thu / Chi cũ */
+function moQuyThuChi() {
+  if (!coQuy()) return;
+  document.getElementById('qtcTieuDe').textContent = 'Thu / Chi — ' + quyTenDa(QUY.ma_da);
+  quyBlVeSo();
+  var tong = (Number(document.getElementById('qtcThuDem').textContent) || 0) + (Number(document.getElementById('qtcChiDem').textContent) || 0);
+  document.getElementById('qtcNho').textContent = tong ? 'Số đỏ = biên lai AI đã đọc, chờ kiểm tra ở khối "Biên lai AI đọc" trong màn Quỹ.' : '';
+  document.getElementById('moQuyThuChi').classList.add('hien');
+}
+function chonQuyThuChi(loai) { dong('moQuyThuChi'); moQuyMuc(loai); }
 function quyBlVe() {
   var khoi = document.getElementById('quyBlKhoi'); if (!khoi) return;
   var b = QBL.ds[QUY.ma_da], tam = QBL.gui.filter(function (x) { return x.ma_da === QUY.ma_da; }), ds = tam.concat(b ? b.ds : []);
