@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.29.0 (GitHub Pages) · 12/10/2026 · đi cùng Code v0.26.0 + CongNo v1.1.0 + Quy v1.4.0 + SoQuy v1.3.0 + OCR v1.9.2 · xlsx-lite 1.1.0
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.29.1 (GitHub Pages) · 19/10/2026 · đi cùng Code v0.26.0 + CongNo v1.1.0 + Quy v1.4.0 + SoQuy v1.3.0 + OCR v1.9.2 · xlsx-lite 1.1.0
+  v1.29.1 — SỔ QUỸ (anh báo F5/MITAC "báo lỗi" 19/10): dòng app / biên lai AI thêm vào sổ chờ kế toán ghi số phiếu KHÔNG còn hiện như lỗi.
+     Khối sổ kế toán tách 2 nút: "⚠ n phiếu cần sửa ở sổ" (lỗi thật) và "⏳ n dòng chờ kế toán xác nhận" (xanh, ghi rõ cột cần ghi + gợi ý số phiếu).
+     Cần SoQuy.gs v1.3.1 (so.xn[]); máy chủ cũ vẫn hiện được.
   v1.29.0 — SỔ QUỸ: 2 NÚT "💵 Trả lương" · "🧾 Ứng CPT" (anh yêu cầu 12/10) — tiền công ty LICOGI13FC trả cho CHT theo sổ 331 kế toán gửi
      (TẤT CẢ dòng Nợ của "Lương các đội" / "Đội ứng mua vật tư nhỏ", xếp nhóm qua quỹ / vay NH / trả thẳng / nộp CĐ-TNCN, kiểm đủ dòng)
      đối chiếu phiếu THU của mọi người giữ quỹ trong sổ quỹ; dòng phải về quỹ mà chưa ghi bôi ĐỎ + nút chép danh sách gửi kế toán. Cần CongNo.gs v1.1.0 (lệnh congNo/cht). Số đỏ trên nút = số dòng chưa ghi.
@@ -325,7 +328,7 @@
   .qr.HUY{opacity:.5} .qr.HUY .tien{text-decoration:line-through}
   .tem.q-CHO_DUYET{background:#B36B00}.tem.q-DA_DUYET{background:var(--ok)}.tem.q-TU_CHOI{background:var(--do)}.tem.q-HUY{background:#888}
   .qcb{display:inline-block;background:#fff3e0;color:#8a4b00;border:1px solid #ffcc80;border-radius:8px;padding:0 6px;font-size:11px;margin:2px 3px 0 0}
-  .qcb.do{background:#ffebee;color:#b71c1c;border-color:#ef9a9a}
+  .qcb.do{background:#ffebee;color:#b71c1c;border-color:#ef9a9a} .qcb.xn{background:#e3f2fd;color:#1565c0;border-color:#90caf9}
   .qr.CAN_TRU .tien{color:#6a1b9a} .qt-dong.tu{cursor:pointer}
   .tu-r{display:flex;gap:8px;padding:9px 4px;border-bottom:1px solid var(--vien);cursor:pointer;align-items:flex-start}
   .tu-r .t{flex:1;min-width:0;font-size:13.5px;line-height:1.35} .tu-r .t small{color:#666;font-size:12px;display:block}
@@ -3024,7 +3027,16 @@ function veSoKeToan(so) {
     '<br>Phiếu từ sổ sửa / xóa trong sổ. Lập Thu / Chi / chụp biên lai trên app → app ghi thêm dòng vào cuối sổ (nền xanh).';
   document.getElementById('quySoMo').href = so.url;
   var n = so.so_loi || 0;
-  document.getElementById('quySoLoiNut').innerHTML = n ? '<button class="nut phu nho" style="margin:0;width:100%;color:#b45309;border-color:#f0c36d" onclick="var d=document.getElementById(\'quySoLoiDs\');d.style.display=d.style.display===\'none\'?\'\':\'none\'">⚠ ' + n + ' phiếu cần sửa ở sổ' + (so.cho_xn ? ' · ' + so.cho_xn + ' dòng chờ kế toán xác nhận' : '') + ' (nhấn để xem)</button>' : '<div class="nho-mo" style="color:var(--ok)">✔ Sổ không có dòng cần sửa.</div>';
+  var xn = so.xn || [], m = so.xn ? (so.cho_xn || 0) : 0;                     // v1.29.1: SoQuy 1.3.1 tách dòng chờ xác nhận khỏi lỗi
+  var bat = function (id) { return 'var d=document.getElementById(\'' + id + '\');d.style.display=d.style.display===\'none\'?\'\':\'none\''; };
+  document.getElementById('quySoLoiNut').innerHTML = (n ? '<button class="nut phu nho" style="margin:0;width:100%;color:#b45309;border-color:#f0c36d" onclick="' + bat('quySoLoiDs') + '">⚠ ' + n + ' phiếu cần sửa ở sổ' + (!so.xn && so.cho_xn ? ' · ' + so.cho_xn + ' dòng chờ kế toán xác nhận' : '') + ' (nhấn để xem)</button>' : '') +
+    (m ? '<button class="nut phu nho" style="margin:' + (n ? '6px' : '0') + ' 0 0;width:100%;color:#1565c0;border-color:#90caf9" onclick="' + bat('quySoXnDs') + '">⏳ ' + m + ' dòng app / biên lai AI thêm — chờ kế toán ghi số phiếu (nhấn để xem)</button>' : '') +
+    (!n && !m ? '<div class="nho-mo" style="color:var(--ok)">✔ Sổ không có dòng cần sửa.</div>' : '');
+  var dsXn = document.getElementById('quySoXnDs');
+  if (!dsXn) { dsXn = document.createElement('div'); dsXn.id = 'quySoXnDs'; dsXn.style.display = 'none'; document.getElementById('quySoLoiDs').insertAdjacentElement('afterend', dsXn); }
+  dsXn.innerHTML = m ? '<div class="nho-mo" style="margin:4px 0">Không phải lỗi: các dòng này app / biên lai AI đã ghi vào sổ và đã tính tồn quỹ. Kế toán mở sổ, ' + (so.mau === 'KTX' ? 'đánh "Có" ở cột F (xl)' : 'ghi số phiếu vào cột J (thu) / K (chi)') + ' là xong.</div>' + xn.map(function (x) {
+    return '<div class="qr ' + esc(x.loai) + '" onclick="moQuyCt(\'' + esc(x.gd_id) + '\')"><div class="t"><b>' + esc(x.ngay) + '</b> · ' + esc(x.ten || '(trống)') + '<span class="nd">' + esc(x.nd) + '</span><small style="color:#1565c0">⏳ ' + esc(x.xn || '') + (x.goi_y ? ' — gợi ý số ' + esc(x.goi_y) : '') + '</small></div><div class="tien">' + (x.loai === 'THU' ? '+' : '−') + dongVn(x.so_tien) + '</div></div>';
+  }).join('') : '';
   document.getElementById('quySoLoiDs').innerHTML = (so.loi || []).map(function (x) {
     return '<div class="qr ' + esc(x.loai) + '" onclick="moQuyCt(\'' + esc(x.gd_id) + '\')"><div class="t"><b>' + esc(x.ngay) + '</b> · ' + esc(x.ten || '(trống)') + '<span class="nd">' + esc(x.nd) + '</span><small style="color:#b45309">' + x.cb.map(esc).join('<br>') + '</small></div><div class="tien">' + (x.loai === 'THU' ? '+' : '−') + dongVn(x.so_tien) + '</div></div>';
   }).join('') + (n > (so.loi || []).length ? '<div class="nho-mo">… còn ' + (n - so.loi.length) + ' dòng — lọc "⚠ Cảnh báo" ở sổ quỹ bên dưới.</div>' : '');
@@ -3154,7 +3166,7 @@ function veSoQuy() {
 }
 function khongDau(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase().trim(); }
 function quyTenNguon(ma) { var n = ((QUY.dm[QUY.ma_da] || {}).nguon || []).filter(function (x) { return x.ma === ma; })[0]; return n ? n.ten : ma; }
-function quyCbHtml(s) { return String(s || '').split(',').filter(String).map(function (c) { var d = QUY_CB[c] || [c, 0]; return '<span class="qcb' + (d[1] ? ' do' : '') + '" title="' + esc(d[0]) + '">' + esc(c) + '</span>'; }).join(''); }
+function quyCbHtml(s) { return String(s || '').split(',').filter(String).map(function (c) { if (c === 'SO-CHO-XN') return '<span class="qcb xn" title="Dòng app / biên lai AI thêm vào sổ — chờ kế toán ghi số phiếu">⏳ chờ KT ghi số phiếu</span>'; var d = QUY_CB[c] || [c, 0]; return '<span class="qcb' + (d[1] ? ' do' : '') + '" title="' + esc(d[0]) + '">' + esc(c) + '</span>'; }).join(''); }
 function quyDongHtml(r) {
   var dau = r.loai === 'THU' ? '+' : (r.loai === 'CHI' ? '−' : (r.loai === 'CAN_TRU' ? '⊖ ' : '⇄ '));
   var nguon = r.loai === 'CAN_TRU' ? 'cấn trừ, không qua quỹ' : (r.loai === 'CHUYEN_NOI_BO' ? quyTenNguon(r.nguon_quy) + ' → ' + quyTenNguon(r.nguon_den) : quyTenNguon(r.nguon_quy) + (r.can_tru_tu ? ' · cấn trừ ứng ' + tienVn(r.can_tru_tu) : ''));
