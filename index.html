@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <!-- =====================================================================
-  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.29.1 (GitHub Pages) · 19/10/2026 · đi cùng Code v0.26.0 + CongNo v1.1.0 + Quy v1.4.0 + SoQuy v1.3.0 + OCR v1.9.2 · xlsx-lite 1.1.0
+  index.html — APP KHO CÔNG TRƯỜNG LICOGI13FC · v1.29.2 (GitHub Pages) · 24/10/2026 · đi cùng Code v0.26.0 + CongNo v1.1.0 + Quy v1.4.0 + SoQuy v1.3.0 + OCR v1.9.2 · xlsx-lite 1.1.0
+  v1.29.2 — VẬT LIỆU CHÍNH KHÔNG CẬP NHẬT (anh báo 24/10, F5-WNC): app lưu bảng vật liệu trên máy (localStorage) và chỉ tải lại khi ĐỔI công trình
+     → sửa sheet KE_HOACH_VL xong mở app vẫn thấy số cũ mãi. Nay mở Tổng quan / bấm nút "Vật liệu" luôn hiện số trên máy rồi tải số mới từ máy chủ ngầm
+     (giống Chi phí thuê). Máy chủ không đổi (cache máy chủ ≤ 5 phút).
   v1.29.1 — SỔ QUỸ (anh báo F5/MITAC "báo lỗi" 19/10): dòng app / biên lai AI thêm vào sổ chờ kế toán ghi số phiếu KHÔNG còn hiện như lỗi.
      Khối sổ kế toán tách 2 nút: "⚠ n phiếu cần sửa ở sổ" (lỗi thật) và "⏳ n dòng chờ kế toán xác nhận" (xanh, ghi rõ cột cần ghi + gợi ý số phiếu).
      Cần SoQuy.gs v1.3.1 (so.xn[]); máy chủ cũ vẫn hiện được.
@@ -1143,7 +1146,7 @@ function moTab(t) {
   var b = document.getElementById('tab' + t); if (b) b.classList.add('chon');
   if (t === 'Ton') taiTon();
   if (t === 'Duyet') taiChoDuyet();
-  if (t === 'TongQuan') { apDungKhoiTq(); taiHangThue(); taiDeNghi(true); taiChiPhi(); }   // v1.8: thêm chi phí thuê
+  if (t === 'TongQuan') { apDungKhoiTq(); taiHangThue(); taiDeNghi(true); taiChiPhi(); if (laAdmin()) taiVatLieu(); }   // v1.8: thêm chi phí thuê · v1.29.2: vật liệu chính luôn làm mới
   if (t === 'DeNghi') taiDeNghi(false);
   if (t === 'Chup') taiHangDoi(true);                                                              // v1.16: hàng đợi OCR nền
   if (t === 'TaiKhoan') veTaiKhoan();                                                              // v1.16
@@ -1816,7 +1819,7 @@ function chonKhoiTq(k) {
   TQ_KHOI = k; try { localStorage.setItem('tq_khoi', k); } catch (e) { }
   apDungKhoiTq();
   if (k === 'CP' && !CP_CACHE[maDaTq()]) taiChiPhi();
-  if (k === 'VL' && !VL_CACHE[maDaTq()]) taiVatLieu();
+  if (k === 'VL') taiVatLieu();                                   // v1.29.2: luôn làm mới (hiện số trên máy trước, tải ngầm)
 }
 function taiChiPhi() {
   var da = document.getElementById('tqDuAn').value; if (!da) return;
